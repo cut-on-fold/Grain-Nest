@@ -93,6 +93,8 @@ export interface SvgPanZoomInstance {
 export interface ImportedFile {
   /** Original filename */
   filename: string;
+  /** v1.8.0: folder the file was imported from (none after opening a project) */
+  dirpath?: string | null;
   /** Root SVG element */
   svg: SVGSVGElement;
   /** True if currently selected in the imports list */
@@ -149,6 +151,8 @@ export interface SelectableNestingResult extends NestingResult {
   selected: boolean;
   /** Utilisation percentage (0-100) */
   utilisation: number;
+  /** v1.8.0: the user clicked this one in "best nests so far" */
+  userPicked?: boolean;
 }
 
 /**

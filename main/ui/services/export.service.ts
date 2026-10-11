@@ -13,6 +13,11 @@ import type {
 import { message } from "../utils/ui-helpers.js";
 import { foldReflectionTransform } from "../utils/dom-utils.js";
 import { toSvgUnits } from "../utils/conversion.js";
+import {
+  fabricWidthTag,
+  inFolder,
+  patternSource,
+} from "../utils/file-names.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape";
@@ -319,6 +324,7 @@ interface FileFilter {
  */
 interface SaveDialogOptions {
   title: string;
+  defaultPath?: string;
   filters: FileFilter[];
 }
 
@@ -534,6 +540,7 @@ export class ExportService {
     }
     let fileName = this.dialog.showSaveDialogSync({
       title: "Export Grain-Nest cut list",
+      defaultPath: this.suggestedExportPath(selected, "_CutList.txt"),
       filters: CUTLIST_FILE_FILTERS,
     });
     if (fileName === undefined) return false;
@@ -541,6 +548,27 @@ export class ExportService {
     const text = this.buildCutListText(selected);
     this.fs.writeFileSync(fileName, text);
     return true;
+  }
+
+  /**
+   * v1.8.0: "<pattern>_Nested_<Fabric>_<width><ending>", next to the
+   * pattern file when its folder is known (see utils/file-names.ts).
+   */
+  suggestedExportPath(
+    nest: SelectableNestingResult,
+    ending: string,
+  ): string | undefined {
+    if (!this.deepNest || !this.config) return undefined;
+    const src = patternSource(this.deepNest);
+    const cfg = this.config.getSync() as unknown as UIConfig;
+    const tag = fabricWidthTag(
+      this.deepNest,
+      nest,
+      cfg.units,
+      Number(cfg.scale) || 96,
+    );
+    const name = `${src ? src.base : "grain-nest"}_Nested${tag ? "_" + tag : ""}${ending}`;
+    return inFolder(src ? src.dir : null, name);
   }
 
   /**
@@ -740,8 +768,14 @@ export class ExportService {
       return false;
     }
 
+    const selected = this.getSelectedNest();
+    if (!selected) {
+      return false;
+    }
+
     let fileName = this.dialog.showSaveDialogSync({
       title: "Export SVG",
+      defaultPath: this.suggestedExportPath(selected, ".svg"),
       filters: SVG_FILE_FILTERS,
     });
 
@@ -752,11 +786,6 @@ export class ExportService {
     // Ensure .svg extension
     if (!fileName.toLowerCase().endsWith(".svg")) {
       fileName = fileName + ".svg";
-    }
-
-    const selected = this.getSelectedNest();
-    if (!selected) {
-      return false;
     }
 
     const svgContent = this.generateSvgExport(selected);

@@ -13,6 +13,7 @@ import type {
 } from "../types/index.js";
 import { IPC_CHANNELS } from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
+import { dropIncompleteNests, rankNests } from "../utils/nest-rank.js";
 
 /**
  * File system interface for cache operations
@@ -389,28 +390,25 @@ export class NestingService {
         return;
       }
 
-      // Get currently selected nests
-      const selected = this.deepNest.nests.filter((n) => n.selected);
+      // v1.8.0: once a layout fits every piece, the ones that don't are
+      // dropped from "best nests so far".
+      dropIncompleteNests(this.deepNest);
 
-      // Only change focus if latest nest is selected or none selected
-      // This preserves user selection when they're viewing a specific result
-      if (
-        selected.length === 0 ||
-        (this.deepNest.nests.length > 1 && this.deepNest.nests[1].selected)
-      ) {
-        // Deselect all nests
-        this.deepNest.nests.forEach((n) => {
+      // v1.8.0: the nest shown is the top of the list (most pieces placed,
+      // then least fabric), unless the user clicked one that's still
+      // there. It used to be the engine's own favourite, which often
+      // wasn't the one at the top of the list.
+      const nests = this.deepNest.nests;
+      const picked = nests.find((n) => n.selected && n.userPicked);
+      const top = rankNests(this.deepNest, nests)[0];
+      if (!picked && top && !top.selected) {
+        nests.forEach((n) => {
           n.selected = false;
+          n.userPicked = false;
         });
-
-        // Select and display the latest (first) nest
-        if (this.deepNest.nests.length > 0) {
-          const latestNest = this.deepNest.nests[0];
-          latestNest.selected = true;
-
-          if (this.displayNestFn) {
-            this.displayNestFn(latestNest);
-          }
+        top.selected = true;
+        if (this.displayNestFn) {
+          this.displayNestFn(top);
         }
       }
 

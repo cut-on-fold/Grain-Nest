@@ -100,6 +100,9 @@ export class DeepNest {
     if (filename) {
       imp = {
         filename: filename,
+        // v1.8.0: the pattern's folder, so Save and Export can suggest
+        // saving next to it.
+        dirpath: dirpath || null,
         svg: svg,
       };
       this.imports.push(imp);

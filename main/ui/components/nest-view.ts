@@ -25,6 +25,7 @@ import {
   clearChildren,
 } from "../utils/dom-utils.js";
 import { millisecondsToStr } from "../utils/ui-helpers.js";
+import { minLengthSvg as minLengthOf, rankNests } from "../utils/nest-rank.js";
 
 /**
  * Ractive event object with original DOM event
@@ -424,43 +425,8 @@ export class NestViewService {
     // (the GA's fitness ranking is NOT a fabric ranking —
     // its favourites can need 200 in while a 157 in layout sits mid-list, so
     // order the list by what the user actually buys).
-    const minLengthSvg = (nest: SelectableNestingResult): number | null => {
-      if (!nest || !nest.placements) return null;
-      const warpDir =
-        (deepNest as unknown as { warpDirection?: "horizontal" | "vertical" })
-          .warpDirection ?? "horizontal";
-      const isWarpH = warpDir !== "vertical";
-      let totalSvg = 0;
-      for (const sg of nest.placements as unknown as Array<{
-        sheet: number;
-        sheetplacements: Array<{
-          source: number;
-          x: number;
-          y: number;
-          rotation: number;
-        }>;
-      }>) {
-        const sheetPart = deepNest.parts[sg.sheet];
-        const sheetOrigin = sheetPart
-          ? isWarpH
-            ? sheetPart.bounds.x
-            : sheetPart.bounds.y
-          : 0;
-        let maxExtent = 0;
-        for (const p of sg.sheetplacements) {
-          const part = deepNest.parts[p.source];
-          if (!part || part.sheet) continue;
-          const pb = deepNest.placedBounds(part, p);
-          if (!pb) continue;
-          const end = isWarpH
-            ? pb.x + pb.width - sheetOrigin
-            : pb.y + pb.height - sheetOrigin;
-          if (end > maxExtent) maxExtent = end;
-        }
-        totalSvg += maxExtent;
-      }
-      return totalSvg;
-    };
+    const minLengthSvg = (nest: SelectableNestingResult): number | null =>
+      minLengthOf(deepNest, nest);
 
     // Format an SVG-unit length in the user's units — same convention as
     // the cut list (m for anything ≥1000 mm, otherwise mm; inches as in).
@@ -579,18 +545,13 @@ export class NestViewService {
         },
         // §9.0.1 R6-A: "best nests so far" ranked by fabric needed,
         // least first — the GA's own fitness order is not a fabric order.
-        // Returns a sorted COPY; deepNest.nests itself is untouched, so
-        // selection, project save and the engine all see the real array.
+        // v1.8.0: layouts that place more pieces come first (one that left
+        // pieces out used less fabric and topped the list). Returns a
+        // sorted COPY; deepNest.nests itself is untouched.
         getNestsByFabric: function (this: {
           get: (key: string) => SelectableNestingResult[];
         }): SelectableNestingResult[] {
-          const ne = this.get("nests");
-          return ne
-            .slice()
-            .sort(
-              (a, b) =>
-                (minLengthSvg(a) ?? Infinity) - (minLengthSvg(b) ?? Infinity),
-            );
+          return rankNests(deepNest, this.get("nests"));
         },
         // §9.0.1 R6-A: per-row fabric-length label so the ranking is
         // visible on the list itself.
@@ -621,10 +582,13 @@ export class NestViewService {
         // Deselect all nests
         for (let i = 0; i < deepNest.nests.length; i++) {
           deepNest.nests[i].selected = false;
+          deepNest.nests[i].userPicked = false;
         }
 
-        // Select this nest
+        // Select this nest. v1.8.0: and keep showing it while the nest
+        // runs, rather than jumping to each new best.
         n.selected = true;
+        n.userPicked = true;
 
         // Update UI
         this.update();

@@ -608,11 +608,21 @@ far.
 - The bar at the top shows **sheets used**, **parts placed**, **sheet
   utilisation** and **min fabric length** — the length of fabric the placed
   pieces actually use, i.e. the least you need to buy.
-- **Best nests so far** lists the layouts found, sorted **least fabric
-  first**, each with its fabric length. Click one to show it; that's the one
-  Export uses.
+- **Best nests so far** lists the layouts found, each with its fabric length.
+  Layouts that fit **every piece come first**, then the ones using the **least
+  fabric**. On a tight fit, some layouts may leave pieces out; as soon as one
+  fits them all, the ones that don't are removed from the list.
+- The layout shown is the **top of the list**, and it moves to each new best
+  as the nest runs. Click another one to show it instead; it stays shown
+  until you click a different one. The one shown is the one Export uses.
 - **Export** saves the selected layout as an **SVG file** or a **Cut list
-  (text)**.
+  (text)**. If that layout leaves pieces out, Grain-Nest says how many are
+  missing and asks before exporting. The suggested name is the pattern's name
+  with the fabric and its width, next to the pattern file: `Coat.svg` nested
+  on 58-inch main fabric becomes `Coat_Nested_Main_58in.svg` (or
+  `Coat_Nested_Main_150cm.svg` when working in mm), and the cut list
+  `Coat_Nested_Main_58in_CutList.txt`. A layout over several fabrics lists
+  each one.
 - **Back** returns to the parts list. This stops the nest and **clears the
   results**, so export what you want to keep first.
 
@@ -708,8 +718,9 @@ get an itemised list. Print it out to take to the fabric shop.
 
 Two buttons in the top bar:
 
-- **Save project** — saves a `.gnp` (Grain-Nest Project) file (the name defaults
-  to `grain-nest-project.gnp`). Keep the `.gnp` ending.
+- **Save project** — saves a `.gnp` (Grain-Nest Project) file. It suggests the
+  pattern's name next to the pattern file (`Coat.svg` → `Coat.gnp`), or the
+  project you opened or last saved. Keep the `.gnp` ending.
 - **Open project** — opens a `.gnp` file. What's on screen is cleared and the
   saved project loaded in its place.
 
@@ -819,8 +830,8 @@ Two example files come with Grain-Nest:
 
 - **Pattern matching** (stripes and checks).
 - **Tighter nests.** The layout search could sometimes pack pieces more tightly;
-  the "best nests so far" list (least fabric first) helps you pick the tightest
-  one meanwhile.
+  the "best nests so far" list (complete layouts first, then least fabric)
+  helps you pick the tightest one meanwhile.
 - **Grain tolerance setting.** The Custom tolerance rule is fixed at ±3°.
 
 ## Where else to look

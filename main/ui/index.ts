@@ -59,6 +59,7 @@ import {
 
 // Utility imports
 import { message } from "./utils/ui-helpers.js";
+import { piecesPlaced, piecesToPlace } from "./utils/nest-rank.js";
 import { getElement, getElements } from "./utils/dom-utils.js";
 import {
   setupPartsColumnResize,
@@ -860,11 +861,27 @@ function initializeExportButtons(): void {
     };
   }
 
+  // v1.8.0: exporting a layout that left pieces out asks first.
+  const okToExport = (): boolean => {
+    const dn = getDeepNest();
+    const nest = dn.nests.find((n) => n.selected);
+    if (!nest) return true;
+    const placed = piecesPlaced(nest);
+    const total = piecesToPlace(dn);
+    if (placed >= total) return true;
+    const missing = total - placed;
+    return window.confirm(
+      `This layout only fits ${placed} of ${total} pattern pieces — ` +
+        `${missing} ${missing === 1 ? "piece is" : "pieces are"} missing from it.\n\n` +
+        "Export it anyway?",
+    );
+  };
+
   // SVG export
   const exportSvgBtn = getElement<HTMLElement>("#exportsvg");
   if (exportSvgBtn) {
     exportSvgBtn.onclick = () => {
-      exportService.exportToSvg();
+      if (okToExport()) exportService.exportToSvg();
       return false;
     };
   }
@@ -873,7 +890,7 @@ function initializeExportButtons(): void {
   const exportCutListBtn = getElement<HTMLElement>("#exportcutlist");
   if (exportCutListBtn) {
     exportCutListBtn.onclick = () => {
-      exportService.exportToCutList();
+      if (okToExport()) exportService.exportToCutList();
       return false;
     };
   }

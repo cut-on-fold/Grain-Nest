@@ -23,6 +23,7 @@ import type {
 } from "../types/index.js";
 import type { Part, NestingResult } from "../../../index.d.ts";
 import { message } from "../utils/ui-helpers.js";
+import { inFolder, patternSource } from "../utils/file-names.js";
 
 /**
  * File system interface — minimal slice this service needs. Matches
@@ -194,7 +195,7 @@ export class ProjectService {
   saveProject(): boolean {
     const filePath = this.dialog.showSaveDialogSync({
       title: "Save Grain-Nest project",
-      defaultPath: DEFAULT_SAVE_FILENAME,
+      defaultPath: this.suggestedProjectPath(),
       filters: PROJECT_FILE_FILTERS,
     });
     if (!filePath) return false;
@@ -202,6 +203,7 @@ export class ProjectService {
     try {
       const data = this.buildSaveData();
       this.fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      this.rememberProject(filePath);
       return true;
     } catch (e) {
       const err = e as Error;
@@ -234,6 +236,7 @@ export class ProjectService {
         return false;
       }
       this.applyLoadData(data);
+      this.rememberProject(paths[0]);
       if (this.onAfterLoad) this.onAfterLoad();
       return true;
     } catch (e) {
@@ -241,6 +244,29 @@ export class ProjectService {
       message(`Could not load project: ${err.message}`, true);
       return false;
     }
+  }
+
+  /**
+   * v1.8.0: the project file last opened or saved, with the pattern it
+   * was for, so saving again suggests the same file.
+   */
+  private lastProject: { path: string; base: string } | null = null;
+
+  private rememberProject(path: string): void {
+    const src = patternSource(this.deepNest);
+    this.lastProject = src ? { path, base: src.base } : null;
+  }
+
+  /**
+   * v1.8.0: named after the pattern ("Coat.gnp", next to the pattern
+   * file), or the project already opened or saved for it.
+   */
+  private suggestedProjectPath(): string {
+    const src = patternSource(this.deepNest);
+    if (!src) return DEFAULT_SAVE_FILENAME;
+    if (this.lastProject && this.lastProject.base === src.base)
+      return this.lastProject.path;
+    return inFolder(src.dir, `${src.base}.gnp`);
   }
 
   // -------------------------------------------------------------------
