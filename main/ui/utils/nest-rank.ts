@@ -8,6 +8,7 @@
 
 import type {
   DeepNestInstance,
+  Part,
   SelectableNestingResult,
 } from "../types/index.js";
 
@@ -70,10 +71,21 @@ export function piecesPlaced(nest: SelectableNestingResult): number {
 }
 
 /** How many pieces the nest should place (quantities, excluded left out). */
+/**
+ * How many copies of a part go into the nest: none when excluded or
+ * skipped (v1.9.0), else the count worked out from its cut code, else
+ * its Quantity. Matches DeepNest.start().
+ */
+export function copiesToNest(p: Part): number {
+  if (p.excluded || p.autoSkip) return 0;
+  if (typeof p.nestQuantity === "number") return p.nestQuantity;
+  return p.quantity || 1;
+}
+
 export function piecesToPlace(deepNest: DeepNestInstance): number {
   let total = 0;
   for (const p of deepNest.parts) {
-    if (!p.sheet && !p.excluded) total += p.quantity || 1;
+    if (!p.sheet) total += copiesToNest(p);
   }
   return total;
 }

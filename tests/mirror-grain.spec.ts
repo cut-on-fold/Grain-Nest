@@ -18,6 +18,7 @@
 // (renderer subprocesses get reaped — see the Phase 5e note).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import path from "path";
 
@@ -27,6 +28,10 @@ test("mirrorCopyPart reflects the grain angle and locks the copy", async ({}, te
   });
 
   const mainWindow = await electronApp.firstWindow();
+
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+
+  await setCutCodes(mainWindow, false);
 
   const inputDir = path.resolve(__dirname, "assets");
   const files = [path.resolve(inputDir, "synthetic-grain.svg")];
@@ -109,6 +114,8 @@ test("mirrorCopyPart reflects the grain angle and locks the copy", async ({}, te
   expect(result.copy.isMirrorCopy, "copy is tagged as a mirror copy").toBe(
     true,
   );
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

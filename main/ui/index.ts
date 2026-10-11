@@ -60,6 +60,8 @@ import {
 // Utility imports
 import { message } from "./utils/ui-helpers.js";
 import { piecesPlaced, piecesToPlace } from "./utils/nest-rank.js";
+import { applyAutoCuts, clearAutoCuts } from "./utils/auto-cuts.js";
+import type { NestJob } from "./utils/nest-jobs.js";
 import { getElement, getElements } from "./utils/dom-utils.js";
 import {
   setupPartsColumnResize,
@@ -300,6 +302,55 @@ function updateForm(c: UIConfig): void {
   });
 }
 
+/** A list of piece names for a message, shortened past a dozen. */
+function pieceList(names: string[]): string {
+  const shown = names.slice(0, 12).map((n) => "• " + n);
+  if (names.length > 12) shown.push(`…and ${names.length - 12} more`);
+  return shown.join("\n");
+}
+
+/**
+ * v1.9.0: before a nest starts, work out the pairs and folds from the cut
+ * codes (Settings: "Pairs & folds from cut codes"). Asks first when some
+ * pieces have no code or can't be folded; returns false to cancel.
+ * `warn` is false when restarting from the nest screen (already asked).
+ */
+function prepareAutoCuts(warn: boolean): boolean {
+  const dn = getDeepNest();
+  if (configService.getSync("autoCutsFromCodes") === false) {
+    clearAutoCuts(dn);
+    return true;
+  }
+  const job = ((dn.nestJob as NestJob | undefined) || "all") as NestJob;
+  const report = applyAutoCuts(
+    dn,
+    job,
+    configService.getSync("equalCutsFuse") !== "separate",
+  );
+  // Folds made for OF codes show in the list ("Unfold").
+  if (partsViewService) partsViewService.update();
+  if (!warn) return true;
+  const notes: string[] = [];
+  if (report.uncoded.length > 0) {
+    notes.push(
+      "These pieces have no cut code (like C2M or C1MOF) in their name, " +
+        "so they're cut as their Quantity says, none mirrored:\n" +
+        pieceList(report.uncoded),
+    );
+  }
+  if (report.foldFailed.length > 0) {
+    notes.push(
+      "These pieces are cut on the fold (OF) but have no fold edge, so " +
+        "they're cut whole as drawn. Use Mark fold to show the fold:\n" +
+        pieceList(report.foldFailed),
+    );
+  }
+  if (notes.length === 0) return true;
+  if (window.confirm(notes.join("\n\n") + "\n\nNest anyway?")) return true;
+  clearAutoCuts(dn);
+  return false;
+}
+
 /**
  * Initialize config form change handlers
  */
@@ -368,6 +419,13 @@ function initializeConfigForm(): void {
       if (key === "units" && partsViewService) {
         partsViewService.updateUnits();
       }
+      // v1.9.0: the cut-code settings change what the rows show.
+      if (
+        (key === "autoCutsFromCodes" || key === "equalCutsFuse") &&
+        partsViewService
+      ) {
+        partsViewService.updateAutoCuts();
+      }
     });
 
     // Config explanation hover handlers
@@ -417,6 +475,7 @@ function initializeConfigForm(): void {
       const cfgValues = configService.getSync() as unknown as ConfigResult;
       getDeepNest().config(cfgValues);
       updateForm(cfgValues);
+      if (partsViewService) partsViewService.updateAutoCuts();
 
       return false;
     };
@@ -649,6 +708,7 @@ function initializeComponents(): void {
     // Note: nestRactive set separately to avoid type conflicts
     displayNestFn: nestViewService.getDisplayNestCallback(),
     saveJsonFn: () => exportService.exportToJson(),
+    prepareNestFn: prepareAutoCuts,
   });
 
   // Set nestRactive separately to avoid type conflicts

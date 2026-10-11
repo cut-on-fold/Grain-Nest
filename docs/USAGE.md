@@ -77,9 +77,11 @@ macOS put on it.)
 4. Check each piece's picture: the orange arrow should point to the top of the
    piece. If a piece is upside down, click **Flip top** in its **Actions**
    column.
-5. Set up pairs and folds in the **Actions** column: **Mirror copy** for a
-   left/right pair, **Cut on fold** (or **Mark fold**) for pieces cut on the
-   fold. See [Quantity, mirror copies and cutting on the fold](#quantity-mirror-copies-and-cutting-on-the-fold).
+5. Check the pairs and folds. If your pieces have cut codes in their names
+   (`C2M`, `C1MOF`…), Grain-Nest makes the left/right pairs and folds for you
+   when you nest; each piece shows its count in the **Quantity** column.
+   Pieces without codes: use **Quantity**, **Mirror copy** and **Cut on fold**
+   (or **Mark fold**) in the **Actions** column. See [Quantity, mirror copies and cutting on the fold](#quantity-mirror-copies-and-cutting-on-the-fold).
 6. Add your fabric: click the **+** button at the bottom left of the parts
    list, choose a preset width (it fills in the **Fabric width**), type the
    **Length** of fabric you want to try, and click **Add**. See [Sheets of fabric](#sheets-of-fabric).
@@ -100,7 +102,7 @@ file out like this makes all three come through automatically.
 
 - One layer called **Pieces**.
 - Inside it, **one group per piece**, labelled with the piece number, name and
-  cut codes, e.g. `14 Skirt Front C1OF`.
+  cut codes, e.g. `14 Skirt Front C1MOF`.
 - Inside each group: the piece's **cutting line** and its **grain line**, with
   the grain line's ID set to `grain-14` (the piece number after `grain-`).
 
@@ -154,7 +156,7 @@ good one to open in Inkscape and copy.
 5. **Group the piece.** Select the cutting line and its grain line and press
    **Ctrl+G**.
 6. **Name the group.** With the group selected, in Object Properties set the
-   **Label** to the piece name with its cut codes, e.g. `14 Skirt Front C1OF`,
+   **Label** to the piece name with its cut codes, e.g. `14 Skirt Front C1MOF`,
    and click **Set**. See [Naming pieces](#naming-pieces-and-the-nest-for-menu)
    for the codes.
 7. Repeat for each piece, then **save as SVG** (Inkscape SVG or plain SVG are
@@ -253,10 +255,13 @@ A piece can belong to more than one job. Some examples:
 
 ### Things to know
 
-- **Codes don't set quantities or folding.** `C2M` doesn't make two copies and
-  `OF` doesn't fold the piece — they only choose which nest a piece goes into.
-  Use **Quantity**, **Mirror copy** and **Cut on fold** for that (see
-  [Quantity, mirror copies and cutting on the fold](#quantity-mirror-copies-and-cutting-on-the-fold)).
+- **Codes also make the pairs and folds** (unless you turn that off in
+  Settings): `C2M` nests a left and a right, `C1MOF` nests one piece cut on the
+  fold. See [Pairs and folds from cut codes](#pairs-and-folds-from-cut-codes).
+- **Fused or separate is your choice.** The table above shows the starting
+  point. A piece with both M and I codes has a **fused** drop-down in its
+  Quantity column that moves it between Main fabric, Fused and Interfacing —
+  see [Main and interfacing](#main-and-interfacing).
 - **The job is applied when you change the menu.** If you rename a piece
   afterwards it isn't re-sorted — pick another job and then pick yours again.
 - After picking a job you can still tick or untick pieces by hand in the
@@ -399,7 +404,63 @@ unticked, or you'll lose some of the freedom that helps pieces fit.
 
 ## Quantity, mirror copies and cutting on the fold
 
-Which one to use:
+### Pairs and folds from cut codes
+
+With **Pairs & folds from cut codes** on (Settings → Cut codes; it's on to
+start with), each piece stays **one row** and Grain-Nest works out its copies
+from the cut code when you click **Start nest**:
+
+| Code | What's nested |
+|---|---|
+| `C1M` | 1 piece, as drawn |
+| `C2M` | a pair: 1 as drawn and 1 mirrored |
+| `C3M` | 2 one way and 1 mirrored |
+| `C4M` | 2 pairs |
+| `C1MOF` | 1 piece, cut on the fold (folded for you) |
+| `C2MOF` | 2 pieces on the fold (not mirrored — a folded piece is the same both ways) |
+
+- The **Quantity** column shows the count from the code instead of a box, with
+  a **mirrored** drop-down: *Auto* is half, rounded down (the table above).
+  Pick a number to change it — **0 mirrored** for pieces cut twice the same way
+  (two identical patch pockets), or 1 for an asymmetric piece where one of
+  three is the other way round.
+- The count **follows Nest for**: `Back C2M C2L` nests a pair in Main fabric and
+  a pair in Lining.
+- **On the fold**: the piece is folded along its grain line (drawn on the fold
+  edge), or the edge you marked with **Mark fold**. If Grain-Nest can't find a
+  fold edge, it tells you before nesting and cuts the piece whole as drawn. If
+  you **Unfold** a piece by hand, it stays unfolded.
+- The mirrored copies only exist while you're nesting: you won't see extra rows
+  in the parts list, and they aren't saved with the project. **Mirror copy**
+  isn't shown on pieces with a code.
+- **Pieces without a code** are cut as their Quantity says, none mirrored.
+  Grain-Nest lists them and asks before nesting, in case one of their names is
+  missing its code.
+- Projects made before this version may have their own mirror copies. With the
+  setting on, a mirror copy of a piece with a code is hidden and not nested
+  (the code already counts it), so pairs aren't doubled. Turn the setting off
+  to see them again.
+
+#### Main and interfacing
+
+A piece with both M and I codes has a **fused** drop-down under its count,
+saying how many of its main pieces are cut from the fused block:
+
+| fused | `C2M C2I` | `C2M C1I` |
+|---|---|---|
+| **All** | both from the fused block (Nest for: Fused) | both from the fused block, and no separate interfacing |
+| **1** (as many as the interfacing pieces) | — | 1 from the fused block (as drawn) and 1 in plain main fabric (mirrored) |
+| **None** (cut separately) | 2 in main fabric, 2 interfacing cut on their own | 2 in main fabric, 1 interfacing cut on its own |
+
+Equal counts start as **All** (bulk-fusing), or **None** if you change
+**Equal main & interfacing** in Settings to *Cut separately*. Fewer
+interfacing than main starts as **None**. Your choice for each piece is saved with the
+project.
+
+### Doing it by hand
+
+Turn **Pairs & folds from cut codes** off in Settings (or use pieces without
+codes) and set things up yourself. Which one to use:
 
 | You need… | Use |
 |---|---|
@@ -534,7 +595,9 @@ sheet unticked.
 
 Each piece's buttons are in the last column: **Flip top** (only when the piece
 has a grain line), **Mirror**, **Mirror copy**, **Cut on fold** / **Unfold** and
-**Mark fold** (hidden while the piece is cut on the fold). Clicking a button,
+**Mark fold** (hidden while the piece is cut on the fold). **Mirror copy** is
+hidden on pieces with a cut code while **Pairs & folds from cut codes** is on
+(the code makes the pair). Clicking a button,
 box or drop-down in a row doesn't select the row.
 
 The Actions column stays pinned to the right-hand edge of the parts list, so
@@ -658,7 +721,7 @@ scale (or hide it in Inkscape).
   page (when **Draw the sheet border** is on in Settings).
 - One group per piece, labelled with the piece's name (mirrored pieces add
   **(mirrored)**). Inside, using the piece number from the start of the name
-  (`14` for "14 Skirt Front C1OF"):
+  (`14` for "14 Skirt Front C1MOF"):
   - `cut-14` — the cutting line, including notches;
   - `sew-14` — the dashed sew line, set in by the seam allowance (when the piece
     has one);
@@ -755,6 +818,11 @@ everything back.
       little interfacing wasted as possible (interfacing is usually much
       narrower than the fabric).
 - **Seam allowance** — the default for wovens (12 mm) and knits (10 mm).
+- **Cut codes**
+  - **Pairs & folds from cut codes** — on by default. See
+    [Pairs and folds from cut codes](#pairs-and-folds-from-cut-codes).
+  - **Equal main & interfacing** — *Bulk-fuse* (the default: `C2M C2I` is cut
+    from the fused block) or *Cut separately*.
 - **Export**
   - **Draw the sheet border** — on by default; handy for lining up a projector.
   - **Gap between sheets** — space between sheets when a layout uses several.

@@ -2363,3 +2363,29 @@ body.dark-mode #bins svg * {
 #nestdisplay svg g.part line {
   stroke: var(--nest-outline) !important;
 }
+
+/* v1.9.0: a piece's count from its cut code, stacked over its small
+   "mirrored" and "fused" drop-downs so they fit a narrow Quantity column. */
+#parts table#partslist td.qtycell .autoqty,
+#parts table#partslist td.qtycell .autonote,
+#parts table#partslist td.qtycell .autolabel,
+#parts table#partslist td.qtycell select {
+  display: block;
+}
+#parts table#partslist td.qtycell .autoqty {
+  font-weight: bold;
+}
+#parts table#partslist td.qtycell .autolabel,
+#parts table#partslist td.qtycell .autonote {
+  font-size: 11px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+#parts table#partslist td.qtycell select {
+  font-size: 11px;
+  width: 100%;
+  min-width: 4.5em;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 1px 2px;
+}

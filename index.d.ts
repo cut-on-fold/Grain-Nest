@@ -281,6 +281,22 @@ export type Part = {
    */
   grainnestId?: number;
   mirrorOfId?: number;
+  /**
+   * v1.9.0 pairs & folds from cut codes (main/ui/utils/auto-cuts.ts).
+   * `fuseMode` and `mirrorCount` are the piece's own choices (saved in the
+   * .gnp). The rest are worked out at nest start and never saved:
+   * `nestQuantity` is how many to nest (replaces Quantity), `autoSkip`
+   * nests none (a manual mirror copy the codes already cover), `autoCopy`
+   * marks the hidden mirrored copy made for the nest, of `autoCopyOf`.
+   * `userUnfolded` stops an OF code re-folding a piece the user unfolded.
+   */
+  fuseMode?: "all" | "one" | "separate";
+  mirrorCount?: number;
+  nestQuantity?: number;
+  autoSkip?: boolean;
+  autoCopy?: boolean;
+  autoCopyOf?: Part;
+  userUnfolded?: boolean;
 };
 
 /**

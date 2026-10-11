@@ -1708,7 +1708,14 @@ export class DeepNest {
         // array (rather than being filtered out) so placement.source still
         // indexes this.parts.
         // v1.2.0: so do excluded sheets (no copies of that fabric).
-        quantity: this.parts[i].excluded ? 0 : this.parts[i].quantity,
+        // v1.9.0: with pairs & folds from cut codes, the count worked out
+        // for this nest (nestQuantity); a skipped piece nests none.
+        quantity:
+          this.parts[i].excluded || this.parts[i].autoSkip
+            ? 0
+            : typeof this.parts[i].nestQuantity === "number"
+              ? this.parts[i].nestQuantity
+              : this.parts[i].quantity,
         sheet: this.parts[i].sheet,
         polygontree: this.cloneTree(this.parts[i].polygontree),
         filename: this.parts[i].filename,

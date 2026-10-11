@@ -4,6 +4,7 @@
 // that left pieces out asks first. Run locally with CI=1.
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import path from "path";
 
@@ -17,6 +18,8 @@ test("Ranking: complete layouts first, incomplete ones dropped", async () => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   await mainWindow.evaluate(async () => {
     const start = Date.now();
     while (!(window as unknown as { DeepNest?: unknown }).DeepNest) {
@@ -83,6 +86,7 @@ test("Ranking: complete layouts first, incomplete ones dropped", async () => {
   expect(result.left.sort()).toEqual(["full-long", "full-short"]);
   expect(result.dropped2).toBe(false);
   expect(result.left2).toBe(2);
+  await setCutCodes(mainWindow, true);
   await electronApp.close();
 });
 
@@ -92,6 +96,8 @@ test("Export warns when the layout leaves pieces out", async () => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -176,5 +182,6 @@ test("Export warns when the layout leaves pieces out", async () => {
     () => !!(globalThis as unknown as { saveAsked?: boolean }).saveAsked,
   );
   expect(saveAsked, "cancelled, so no save dialog").toBe(false);
+  await setCutCodes(mainWindow, true);
   await electronApp.close();
 });

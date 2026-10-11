@@ -9,6 +9,7 @@
 // Uses examples/example-pattern.svg. Run locally with CI=1.
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import path from "path";
 
@@ -34,6 +35,8 @@ test("Mark fold, folded mirror copies, mirror-then-fold, re-mark", async () => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -190,6 +193,8 @@ test("Mark fold, folded mirror copies, mirror-then-fold, re-mark", async () => {
     return { copyMirror: !!dn.parts[c].mirror, same: xs(c) === original };
   }, back);
   expect(mm).toEqual({ copyMirror: false, same: true });
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

@@ -11,6 +11,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -35,6 +36,8 @@ test("sheets: name, fabric, Nest for picks them, nest uses only ticked ones", as
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   await electronApp.evaluate(
     ({ dialog }, p) => {
       dialog.showOpenDialog = async (): Promise<OpenDialogReturnValue> => ({
@@ -210,6 +213,8 @@ test("sheets: name, fabric, Nest for picks them, nest uses only ticked ones", as
   }, savedPath);
   await mainWindow.click("id=openproject");
   await expect.poll(sheets, { timeout: 15000 }).toEqual(before);
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

@@ -103,6 +103,12 @@ interface SavedPart {
   excluded?: boolean;
   /** v1.2.0: sheets only — the fabric this sheet is for. */
   fabric?: string;
+  /** v1.9.0: the piece's Fuse choice (main + interfacing codes). */
+  fuseMode?: "all" | "one" | "separate";
+  /** v1.9.0: how many are mirrored (absent = Auto, half). */
+  mirrorCount?: number;
+  /** v1.9.0: unfolded by hand, so an OF code doesn't re-fold it. */
+  userUnfolded?: boolean;
 }
 
 /**
@@ -310,7 +316,10 @@ export class ProjectService {
         .forEach((p, i) => fileOrderRank.set(p, i));
     }
 
-    const parts: SavedPart[] = this.deepNest.parts.map((p, savedIdx) => {
+    // v1.9.0: the copies made for a nest aren't saved (they're made again
+    // at the next nest); they sit at the end, so other indices are kept.
+    const toSave = this.deepNest.parts.filter((p) => !p.autoCopy);
+    const parts: SavedPart[] = toSave.map((p, savedIdx) => {
       const common = {
         quantity: p.quantity,
         name: p.name,
@@ -327,6 +336,9 @@ export class ProjectService {
         // v1.2.0: sheets can be excluded too, and carry a fabric.
         excluded: p.excluded || undefined,
         fabric: p.sheet ? p.fabric || undefined : undefined,
+        fuseMode: p.sheet ? undefined : p.fuseMode,
+        mirrorCount: p.sheet ? undefined : p.mirrorCount,
+        userUnfolded: p.sheet ? undefined : p.userUnfolded || undefined,
       };
 
       // Sheet — has no entry in deepNest.imports (addSheet uses
@@ -689,6 +701,10 @@ export class ProjectService {
       part.seamAllowance = saved.seamAllowance;
     part.excluded = !!saved.excluded;
     if (saved.sheet && saved.fabric) part.fabric = saved.fabric;
+    if (saved.fuseMode) part.fuseMode = saved.fuseMode;
+    if (typeof saved.mirrorCount === "number")
+      part.mirrorCount = saved.mirrorCount;
+    if (saved.userUnfolded) part.userUnfolded = true;
 
     // Reconcile mirror. mirrorCopyPart already flipped once; if the
     // saved state says mirror=false, toggle it back off.

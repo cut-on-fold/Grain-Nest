@@ -24,6 +24,16 @@ import {
 import { throttle, message } from "../utils/ui-helpers.js";
 import { resetLayout } from "../utils/column-resize.js";
 import {
+  fuseModeFor,
+  hasFuseChoice,
+  isCoveredCopy,
+  jobsForPiece,
+  parseCuts,
+  primaryCount,
+  primaryFold,
+  type FuseMode,
+} from "../utils/auto-cuts.js";
+import {
   NEST_JOBS,
   applyNestJob,
   SHEET_FABRICS,
@@ -258,6 +268,15 @@ interface PartsViewData {
   nestJob: NestJob;
   showExcluded: boolean;
   excludedCount: (parts: Part[]) => number;
+  /** v1.9.0: pairs & folds from cut codes, and the template's helpers. */
+  autoCuts: boolean;
+  bulkFuse: boolean;
+  rowShown: (...args: never[]) => boolean;
+  autoCount: (...args: never[]) => number;
+  autoFold: (...args: never[]) => boolean;
+  mirrorChoices: (...args: never[]) => unknown[];
+  fuseChoice: (...args: never[]) => boolean;
+  fuseChoices: (...args: never[]) => unknown[];
 }
 
 /**
@@ -643,6 +662,50 @@ export class PartsViewService {
     }
   }
 
+  /** v1.9.0: Settings "Pairs & folds from cut codes" is on. */
+  private autoCutsOn(): boolean {
+    return this.config.getSync("autoCutsFromCodes") !== false;
+  }
+
+  /** v1.9.0: Settings "Equal main & interfacing" is Bulk-fuse. */
+  bulkFuseByDefault(): boolean {
+    return this.config.getSync("equalCutsFuse") !== "separate";
+  }
+
+  /**
+   * v1.9.0: whether a row shows in the parts list. Hidden: the copies
+   * made for a nest, and (with cut codes on) manual mirror copies of a
+   * piece whose code already counts them; with "Hide excluded", excluded
+   * pieces.
+   */
+  isRowVisible(p: Part): boolean {
+    if (p.autoCopy) return false;
+    if (this.autoCutsOn() && isCoveredCopy(this.deepNest.parts, p))
+      return false;
+    return !!this.ractive?.get("showExcluded") || !!p.sheet || !p.excluded;
+  }
+
+  /**
+   * Applies a "Nest for" job. v1.9.0: with cut codes on, each piece's Fuse
+   * choice decides whether it is Main, Fused or Interfacing.
+   */
+  applyJob(job: NestJob): ReturnType<typeof applyNestJob> {
+    if (!this.autoCutsOn()) return applyNestJob(this.deepNest.parts, job);
+    const bulk = this.bulkFuseByDefault();
+    return applyNestJob(this.deepNest.parts, job, (p) => jobsForPiece(p, bulk));
+  }
+
+  /** v1.9.0: the cut-code settings changed; redraw the rows. */
+  updateAutoCuts(): void {
+    if (!this.ractive) return;
+    this.ractive.set("autoCuts", this.autoCutsOn());
+    this.ractive.set("bulkFuse", this.bulkFuseByDefault());
+    // The settings can move pieces between Main, Fused and Interfacing.
+    const job = (this.deepNest.nestJob as NestJob | undefined) || "all";
+    if (job !== "all") this.applyJob(job);
+    this.ractive.update("parts");
+  }
+
   /**
    * Initialize the Ractive instance for parts list
    */
@@ -678,7 +741,72 @@ export class PartsViewService {
         nestJob: (deepNest.nestJob as NestJob | undefined) || "all",
         showExcluded: true,
         excludedCount: function (parts: Part[]): number {
-          return parts.filter((p) => !p.sheet && p.excluded).length;
+          return parts.filter((p) => !p.sheet && p.excluded && !p.autoCopy)
+            .length;
+        },
+        // v1.9.0: pairs & folds from cut codes (see utils/auto-cuts.ts).
+        // The template also passes the row's fields they read (name,
+        // mirrorCount, …) so Ractive redraws them when those change.
+        autoCuts: this.autoCutsOn(),
+        bulkFuse: this.bulkFuseByDefault(),
+        rowShown: function (
+          p: Part,
+          parts: Part[],
+          showExcluded: boolean,
+          autoCuts: boolean,
+        ): boolean {
+          if (p.autoCopy) return false;
+          if (autoCuts && isCoveredCopy(parts, p)) return false;
+          return showExcluded || !!p.sheet || !p.excluded;
+        },
+        autoCount: function (p: Part): number {
+          return p.sheet ? 0 : primaryCount(p);
+        },
+        autoFold: function (p: Part): boolean {
+          return primaryFold(p);
+        },
+        // "Mirrored" choices: Auto (half, rounded down) or 0…count.
+        mirrorChoices: function (
+          p: Part,
+        ): { value: string; label: string; sel: boolean }[] {
+          const n = primaryCount(p);
+          const choices = [
+            {
+              value: "auto",
+              label: "Auto",
+              sel: p.mirrorCount === undefined,
+            },
+          ];
+          for (let k = 0; k <= n; k++) {
+            choices.push({
+              value: String(k),
+              label: String(k),
+              sel: p.mirrorCount === k,
+            });
+          }
+          return choices;
+        },
+        fuseChoice: function (p: Part): boolean {
+          return !p.sheet && hasFuseChoice(p);
+        },
+        fuseChoices: function (
+          p: Part,
+          ...deps: unknown[]
+        ): { value: FuseMode; label: string; sel: boolean }[] {
+          // The last argument is the Settings default (bulkFuse).
+          const mode = fuseModeFor(p, deps[deps.length - 1] !== false);
+          const c = parseCuts(p.name);
+          const m = c.M?.count ?? 0;
+          const i = c.I?.count ?? 0;
+          // "n fused" only differs from All fused with fewer interfacing.
+          const options: [FuseMode, string][] = [["all", "All"]];
+          if (i < m) options.push(["one", String(i)]);
+          options.push(["separate", "None"]);
+          return options.map(([value, label]) => ({
+            value,
+            label,
+            sel: value === mode,
+          }));
         },
         serializeSvg: function (svg: SVGElement): string {
           return serializeSvg(svg);
@@ -778,9 +906,7 @@ export class PartsViewService {
     ractive.on("selectall", () => {
       // phase-r8a: with "Hide excluded" on, Select all covers only the rows
       // you can see.
-      const visible = deepNest.parts.filter(
-        (p) => ractive.get("showExcluded") || p.sheet || !p.excluded,
-      );
+      const visible = deepNest.parts.filter((p) => this.isRowVisible(p));
       const selectedCount = visible.filter((p) => p.selected).length;
       const toggleOn = selectedCount < visible.length;
 
@@ -923,9 +1049,13 @@ export class PartsViewService {
         const part = args[0] as Part;
         const idx = deepNest.parts.indexOf(part);
         if (idx === -1) return false;
+        // v1.9.0: an OF cut code won't re-fold a piece unfolded here.
         if (part.cutOnFold) {
           deepNest.unfoldPart(idx);
-        } else if (!deepNest.foldPart(idx)) {
+          part.userUnfolded = true;
+        } else if (deepNest.foldPart(idx)) {
+          delete part.userUnfolded;
+        } else {
           message(
             "To cut on the fold, click Mark fold and then the piece's fold " +
               "edge in the preview, or draw its grain line on the fold edge " +
@@ -942,9 +1072,8 @@ export class PartsViewService {
     // A piece that's hidden (excluded while "Hide excluded" is on) must not
     // stay selected, or Bulk Apply / Delete would act on rows you can't see.
     const deselectHidden = (): void => {
-      if (ractive.get("showExcluded")) return;
       deepNest.parts.forEach((p) => {
-        if (p.selected && p.excluded && !p.sheet) this.togglePart(p);
+        if (p.selected && !this.isRowVisible(p)) this.togglePart(p);
       });
     };
 
@@ -972,7 +1101,7 @@ export class PartsViewService {
       const job = (e.original.target as HTMLSelectElement).value as NestJob;
       ractive.set("nestJob", job);
       deepNest.nestJob = job;
-      const { included: n, sheets } = applyNestJob(deepNest.parts, job);
+      const { included: n, sheets } = this.applyJob(job);
       const label = NEST_JOBS.find((j) => j.id === job)?.label ?? job;
       // v1.2.0: also say which sheets the job ticked (or that none is set
       // to its fabric, so the sheet ticks were left alone).
@@ -993,6 +1122,32 @@ export class PartsViewService {
       afterIncludeChange(note);
       return;
     });
+
+    // v1.9.0: a piece's "Mirrored" and "Fuse" choices (cut codes on).
+    ractive.on(
+      "setmirrorcount",
+      (e: RactiveEvent, ...args: unknown[]): boolean | void => {
+        const part = args[0] as Part;
+        const v = (e.original.target as HTMLSelectElement).value;
+        if (v === "auto") delete part.mirrorCount;
+        else part.mirrorCount = parseInt(v, 10);
+        ractive.update("parts");
+        return false;
+      },
+    );
+    ractive.on(
+      "setfusemode",
+      (e: RactiveEvent, ...args: unknown[]): boolean | void => {
+        const part = args[0] as Part;
+        part.fuseMode = (e.original.target as HTMLSelectElement)
+          .value as FuseMode;
+        // The choice moves the piece between Main, Fused and Interfacing.
+        const job = (deepNest.nestJob as NestJob | undefined) || "all";
+        if (job !== "all") this.applyJob(job);
+        afterIncludeChange();
+        return false;
+      },
+    );
 
     ractive.on("toggleexcluded", (): boolean | void => {
       ractive.set("showExcluded", !ractive.get("showExcluded"));
@@ -1409,8 +1564,10 @@ export class PartsViewService {
     const ok = this.deepNest.markFoldEdge(idx, { x: p.x, y: p.y });
     this.cancelMarkingMode();
     // v1.7.0: like the other actions, a marked fold unselects the piece.
-    if (ok && this.deepNest.parts[idx])
+    if (ok && this.deepNest.parts[idx]) {
       this.deepNest.parts[idx].selected = false;
+      delete this.deepNest.parts[idx].userUnfolded;
+    }
     if (!ok) {
       message(
         "Couldn't fold the piece along that edge. Click right on its straight fold edge.",

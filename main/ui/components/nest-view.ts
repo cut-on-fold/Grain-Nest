@@ -25,7 +25,11 @@ import {
   clearChildren,
 } from "../utils/dom-utils.js";
 import { millisecondsToStr } from "../utils/ui-helpers.js";
-import { minLengthSvg as minLengthOf, rankNests } from "../utils/nest-rank.js";
+import {
+  copiesToNest,
+  minLengthSvg as minLengthOf,
+  rankNests,
+} from "../utils/nest-rank.js";
 
 /**
  * Ractive event object with original DOM event
@@ -491,8 +495,9 @@ export class NestViewService {
           let total = 0;
           for (let i = 0; i < deepNest.parts.length; i++) {
             // phase-r8a: excluded pieces aren't part of this nest.
-            if (!deepNest.parts[i].sheet && !deepNest.parts[i].excluded) {
-              total += deepNest.parts[i].quantity;
+            // v1.9.0: counts from cut codes (see copiesToNest).
+            if (!deepNest.parts[i].sheet) {
+              total += copiesToNest(deepNest.parts[i]);
             }
           }
 

@@ -250,14 +250,35 @@
           			</thead>
           			<tbody>
           				{{#each parts:i}}
-          					{{#if showExcluded || sheet || !excluded}}
+          					{{#if rowShown(this, parts, showExcluded, autoCuts)}}
           					<tr on-mouseenter-mousedown="selecthandler:{{this}}" class='{{ selected ? "active" : "" }}{{ excluded ? " excluded" : "" }}'>
           						<td><input type="checkbox" class="includetoggle" checked="{{ !excluded }}" on-change="includetoggle:{{i}}" title="{{ sheet ? 'Use this sheet in the nest' : 'Include this piece in the nest' }}" /></td>
           						<td><span class="partthumb" data-index="{{i}}"></span> <span style="display: none">{{bounds.width}}</span></td>
           						<td><input type="text" class="partname" value="{{name}}" placeholder="{{ sheet ? 'Sheet name' : filename }}" /></td>
           						<td><dimensionLabel/></td>
           						<td><input type="checkbox" checked='{{sheet}}' /></td>
-          						<td><input type="number" min="1" step="1" value="{{quantity}}" /></td>
+          						<td class="qtycell">
+          							{{#if autoCuts && autoCount(this, name) > 0}}
+          								<!-- v1.9.0: the count comes from the cut code -->
+          								<span class="autoqty" title="From the cut code in the name">{{ autoCount(this, name) }}</span>
+          								{{#if autoFold(this, name)}}
+          									<span class="autonote" title="Cut on the fold (OF in the cut code)">on fold</span>
+          								{{else}}
+          									<span class="autolabel">mirrored</span>
+          									<select class="mirrorcount" on-change="setmirrorcount:{{this}}" title="How many are cut mirrored (Auto: half, rounded down)">
+          										{{#each mirrorChoices(this, name, mirrorCount)}}<option value="{{value}}" selected="{{sel}}">{{label}}</option>{{/each}}
+          									</select>
+          								{{/if}}
+          								{{#if fuseChoice(this, name)}}
+          									<span class="autolabel">fused</span>
+          									<select class="fusemode" on-change="setfusemode:{{this}}" title="How the main pieces are cut with interfacing: all from the fused block, as many as the interfacing pieces, or main and interfacing cut separately">
+          										{{#each fuseChoices(this, name, fuseMode, bulkFuse)}}<option value="{{value}}" selected="{{sel}}">{{label}}</option>{{/each}}
+          									</select>
+          								{{/if}}
+          							{{else}}
+          								<input type="number" min="1" step="1" value="{{quantity}}" />
+          							{{/if}}
+          						</td>
           						<td>{{#if !sheet}}<input type="number" class="seamallowance" min="0" step="0.5" value="{{seamAllowance}}" placeholder="0" />{{/if}}</td>
           						<td>
           							{{#if sheet}}
@@ -283,7 +304,9 @@
           							{{/if}}
           							{{#if !sheet}}
           								<a href="#" class="mirror" on-click="mirrortoggle:{{this}}">{{ mirror ? 'Unmirror' : 'Mirror' }}</a>
-          								<a href="#" class="mirror" on-click="mirrorcopy:{{this}}">Mirror copy</a>
+          								{{#if !(autoCuts && autoCount(this, name) > 0)}}
+          									<a href="#" class="mirror" on-click="mirrorcopy:{{this}}">Mirror copy</a>
+          								{{/if}}
           								<a href="#" class="mirror" on-click="foldtoggle:{{this}}">{{ cutOnFold ? 'Unfold' : 'Cut on fold' }}</a>
           								{{#if !cutOnFold}}
           									<a href="#" class="mirror markfold" on-click="markfold:{{this}}" title="Click the piece's fold edge in the preview on the right; the piece is then cut on the fold along that edge">Mark fold</a>
@@ -458,6 +481,24 @@
                 required
               />
               <i>mm</i>
+            </dd>
+          </dl>
+          <h1>Cut codes</h1>
+          <dl class="formgroup">
+            <dt>Pairs &amp; folds from cut codes</dt>
+            <dd>
+              <input
+                id="autoCutsFromCodes"
+                type="checkbox"
+                data-config="autoCutsFromCodes"
+              />
+            </dd>
+            <dt>Equal main &amp; interfacing</dt>
+            <dd>
+              <select name="equalCutsFuse" data-config="equalCutsFuse">
+                <option value="fuse">Bulk-fuse (C2M C2I = 2 fused)</option>
+                <option value="separate">Cut separately</option>
+              </select>
             </dd>
           </dl>
           <h1>Export</h1>
@@ -1376,6 +1417,42 @@
           of interfacing to the fashion fabric and cut the pieces from it, with
           as little interfacing wasted as possible (interfacing is usually much
           narrower than the fabric).
+        </div>
+
+        <div class="config_explain" id="explain_autoCutsFromCodes">
+          <h1>Pairs &amp; folds from cut codes</h1>
+          Reads the cut code in each piece's name and works out the copies
+          when you nest, so each piece stays one row:
+          <h2>Pairs</h2>
+          C2M cuts two main pieces: one as drawn and one mirrored (a left and
+          a right). C3M cuts two one way and one mirrored. A piece's
+          <em>mirrored</em> drop-down changes how many are mirrored, e.g. 0 for a
+          piece cut twice the same way.
+          <h2>On the fold</h2>
+          C1MOF cuts one main piece on the fold: the piece is folded for you
+          (it needs a fold line or a straight edge).
+          <h2>Each fabric</h2>
+          The count follows <em>Nest for</em>: C2M C2I L1 nests 2 in main
+          fabric (or fused), 2 interfacing and 1 lining.
+          <h2>Pieces without a code</h2>
+          These use their Quantity. You're warned before nesting.
+          <p>Off: every piece uses its Quantity, Mirror copy and Fold as you
+          set them.</p>
+        </div>
+
+        <div class="config_explain" id="explain_equalCutsFuse">
+          <h1>Equal main &amp; interfacing</h1>
+          For a piece with as many interfacing as main pieces (C2M C2I):
+          <h2>Bulk-fuse</h2>
+          Both main pieces are cut from the fused block (Nest for: Fused), and
+          nothing extra is cut from interfacing.
+          <h2>Cut separately</h2>
+          Two main pieces in main fabric, two interfacing pieces cut on their
+          own.
+          <p>Fewer interfacing than main (C2M C1I) cuts separately to start
+          with. Each piece's <em>fused</em> drop-down can change this: All, a
+          number (as many as there are interfacing pieces, the rest plain
+          main fabric) or None (cut separately).</p>
         </div>
 
         <div class="config_explain" id="explain_populationSize">

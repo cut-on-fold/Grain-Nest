@@ -9,6 +9,7 @@
 // R6-D: a mirror copy inherits its source's seam allowance.
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -20,6 +21,10 @@ test("bulk mirror copies save exact source links; corrupted files rescue by name
   });
 
   const mainWindow = await electronApp.firstWindow();
+
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+
+  await setCutCodes(mainWindow, false);
 
   const inputDir = path.resolve(__dirname, "assets");
   const files = [path.resolve(inputDir, "synthetic-grain.svg")];
@@ -179,6 +184,8 @@ test("bulk mirror copies save exact source links; corrupted files rescue by name
   ).toBe(135);
   expect(front!.seam, "seam allowance survives the round-trip").toBe(7);
   expect(front!.mirror, "copy is mirrored").toBe(true);
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

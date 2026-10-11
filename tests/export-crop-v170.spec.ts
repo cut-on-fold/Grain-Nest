@@ -6,6 +6,7 @@
 // sheets button, which is gone). Run locally with CI=1.
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import path from "path";
@@ -16,6 +17,8 @@ test("Export crops the page to the nested pieces", async ({}, testInfo) => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -143,5 +146,6 @@ test("Export crops the page to the nested pieces", async ({}, testInfo) => {
   expect(report.pageMm[1]).toBeLessThan(600);
   expect(report.piecesInBorder).toBe(true);
   expect(report.borderWidthMm).toBeLessThan(600);
+  await setCutCodes(mainWindow, true);
   await electronApp.close();
 });

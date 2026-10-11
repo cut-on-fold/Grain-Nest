@@ -70,6 +70,10 @@ export const DEFAULT_CONFIG: Readonly<UIConfig> = {
   // v1.3.0: knits default to 10 mm. Which one new pieces get is the
   // project's Woven / Knit switch (DeepNest.fabricType).
   defaultSeamAllowanceKnitMm: 10,
+  // v1.9.0: pairs and folds worked out from the cut codes in piece names
+  // ("C2M", "C1MOF"); equal main & interfacing counts bulk-fuse.
+  autoCutsFromCodes: true,
+  equalCutsFuse: "fuse",
   // v1.3.0: bumped when saved settings need a one-off migration.
   settingsRevision: 3,
 };
@@ -85,6 +89,7 @@ export const BOOLEAN_CONFIG_KEYS: ReadonlyArray<keyof UIConfig> = [
   "exportWithSheetBoundboarders",
   "exportWithSheetsSpace",
   "exportScalingBox",
+  "autoCutsFromCodes",
 ];
 
 /**

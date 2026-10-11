@@ -12,6 +12,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -44,6 +45,8 @@ test("nest jobs include/exclude pieces, nest skips excluded, survive save/load",
   test.setTimeout(180000);
   const electronApp = await electron.launch({ args: ["main.js"] });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
 
   const svg = path.resolve(__dirname, "assets", "synthetic-grain.svg");
   await electronApp.evaluate(({ dialog }, p) => {
@@ -238,6 +241,8 @@ test("nest jobs include/exclude pieces, nest skips excluded, survive save/load",
   await expect(mainWindow.locator("#messagecontent")).toContainText(
     "No pieces are included",
   );
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

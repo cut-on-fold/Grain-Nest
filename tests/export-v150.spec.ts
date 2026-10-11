@@ -10,6 +10,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import path from "path";
@@ -20,6 +21,8 @@ test("SVG export: layers, named piece groups, line styles, names, calibration", 
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -292,6 +295,8 @@ test("SVG export: layers, named piece groups, line styles, names, calibration", 
   expect(report.calibration!.bottom).toBeLessThanOrEqual(sheetY + 0.001);
   expect(report.calibration!.right).toBeLessThanOrEqual(report.viewBox[2]);
 
+  await setCutCodes(mainWindow, true);
+
   await electronApp.close();
 });
 
@@ -300,6 +305,8 @@ test("Settings: export line width and colours", async () => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
   await expect(mainWindow.locator("#exportCutColour")).toHaveCount(1);
   // Wait until the app has started (settings loaded into the form).
   await expect
@@ -353,5 +360,6 @@ test("Settings: export line width and colours", async () => {
     set("exportLineWidthMm", "2");
     set("exportCutColour", "#3b1f6e");
   });
+  await setCutCodes(mainWindow, true);
   await electronApp.close();
 });

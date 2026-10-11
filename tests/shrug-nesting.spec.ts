@@ -12,6 +12,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import path from "path";
@@ -24,6 +25,10 @@ test("shrug + mirror copy both place, windings agree, fitness finite", async ({}
   });
 
   const mainWindow = await electronApp.firstWindow();
+
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+
+  await setCutCodes(mainWindow, false);
   const consoleLines: string[] = [];
   mainWindow.on("console", (msg) => {
     consoleLines.push(`[${msg.type()}] ${msg.text()}`);
@@ -212,6 +217,8 @@ test("shrug + mirror copy both place, windings agree, fitness finite", async ({}
   // be a real number.
   const nanLines = consoleLines.filter((l) => /fitness: NaN/.test(l));
   expect(nanLines.length, "no NaN fitness in any engine response").toBe(0);
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

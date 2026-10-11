@@ -58,6 +58,10 @@ export interface UIConfig extends DeepNestConfig {
   defaultSeamAllowanceMm?: number;
   /** v1.3.0: default seam allowance (mm) for knit projects. */
   defaultSeamAllowanceKnitMm?: number;
+  /** v1.9.0: pairs and folds from the cut codes in piece names. */
+  autoCutsFromCodes?: boolean;
+  /** v1.9.0: equal main & interfacing counts: "fuse" or "separate". */
+  equalCutsFuse?: "fuse" | "separate";
   /** v1.3.0: saved-settings migration level (see ConfigService). */
   settingsRevision?: number;
 }

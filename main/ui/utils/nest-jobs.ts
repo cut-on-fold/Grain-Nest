@@ -121,11 +121,17 @@ export interface NestJobResult {
  * unticking the rest. "All pieces", or a job no sheet is set to, leaves the
  * sheet ticks alone rather than leave the nest with no fabric.
  */
-export function applyNestJob(parts: JobPart[], job: NestJob): NestJobResult {
+export function applyNestJob<P extends JobPart>(
+  parts: P[],
+  job: NestJob,
+  // v1.9.0: with pairs & folds from cut codes, each piece's Fuse choice
+  // decides between Main, Fused and Interfacing (auto-cuts jobsForPiece).
+  jobsOf: (p: P) => Set<NestJob> = (p) => jobsForName(p.name),
+): NestJobResult {
   let included = 0;
   for (const p of parts) {
     if (p.sheet) continue;
-    p.excluded = job === "all" ? false : !jobsForName(p.name).has(job);
+    p.excluded = job === "all" ? false : !jobsOf(p).has(job);
     if (!p.excluded) included++;
   }
   const sheets = parts.filter((p) => p.sheet);

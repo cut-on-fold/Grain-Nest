@@ -9,6 +9,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -31,6 +32,8 @@ test("reopened projects keep size and row order; one thumbnail per row", async (
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Written for Quantity and Mirror copy by hand (v1.9.0).
+  await setCutCodes(mainWindow, false);
 
   const svg = path.resolve(__dirname, "assets", "synthetic-mm.svg");
   await electronApp.evaluate(({ dialog }, p) => {
@@ -269,6 +272,8 @@ test("reopened projects keep size and row order; one thumbnail per row", async (
     );
     expect(r.svgCount).toBe(1);
   }
+
+  await setCutCodes(mainWindow, true);
 
   await electronApp.close();
 });

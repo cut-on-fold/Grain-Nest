@@ -14,6 +14,7 @@ import type {
 import { IPC_CHANNELS } from "../types/index.js";
 import { message } from "../utils/ui-helpers.js";
 import { dropIncompleteNests, rankNests } from "../utils/nest-rank.js";
+import { clearAutoCuts } from "../utils/auto-cuts.js";
 
 /**
  * File system interface for cache operations
@@ -112,6 +113,12 @@ export class NestingService {
   /** Function to save current result to JSON */
   private saveJsonFn: SaveJsonFunction | null = null;
 
+  /**
+   * v1.9.0: called before a nest starts (pairs & folds from cut codes);
+   * false cancels. `warn` is false on a restart from the nest screen.
+   */
+  private prepareNestFn: ((warn: boolean) => boolean) | null = null;
+
   /** Flag indicating if nesting is being started */
   private isStarting = false;
 
@@ -129,6 +136,7 @@ export class NestingService {
     nestRactive?: RactiveInstance<NestViewData>;
     displayNestFn?: DisplayNestFunction;
     saveJsonFn?: SaveJsonFunction;
+    prepareNestFn?: (warn: boolean) => boolean;
   }) {
     if (options) {
       this.fs = options.fs || null;
@@ -137,6 +145,7 @@ export class NestingService {
       this.nestRactive = options.nestRactive || null;
       this.displayNestFn = options.displayNestFn || null;
       this.saveJsonFn = options.saveJsonFn || null;
+      this.prepareNestFn = options.prepareNestFn || null;
     }
   }
 
@@ -425,7 +434,7 @@ export class NestingService {
    * @param progressCallback - Optional callback for progress updates
    * @returns True if nesting was started successfully
    */
-  startNesting(progressCallback?: ProgressCallback): boolean {
+  startNesting(progressCallback?: ProgressCallback, restart = false): boolean {
     if (!this.deepNest) {
       message("DeepNest instance not available", true);
       return false;
@@ -459,6 +468,11 @@ export class NestingService {
       message(
         'No pieces are included in this nest — tick some in the "Nest" column or pick a different "Nest for" job.',
       );
+      return false;
+    }
+
+    // v1.9.0: pairs & folds from cut codes (may ask first).
+    if (this.prepareNestFn && !this.prepareNestFn(!restart)) {
       return false;
     }
 
@@ -551,7 +565,7 @@ export class NestingService {
       // After a delay, switch to stop state and start nesting
       setTimeout(() => {
         this.updateStopButton("stop");
-        this.startNesting();
+        this.startNesting(undefined, true);
       }, 1000);
     }
     // If disabled, do nothing
@@ -583,6 +597,8 @@ export class NestingService {
       // Reset DeepNest state
       if (this.deepNest) {
         this.deepNest.reset();
+        // v1.9.0: the copies made for the nest go with it.
+        clearAutoCuts(this.deepNest);
       }
 
       // Delete the cache
