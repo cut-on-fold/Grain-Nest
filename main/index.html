@@ -236,8 +236,24 @@
           	     pieces, with a divider to share the space. -->
           	{{#if layoutsData.any}}
           	<div id="layoutspanel" style="height: {{layoutsHeight}}px">
-          		<div class="lp-head">Saved layouts</div>
+          		<div class="lp-head"><span>Saved layouts</span>
+          			{{#if viewsData.list.length}}
+          			<!-- v1.11.0: views (services/views.service.ts) -->
+          			<label class="lp-view">View
+          				<select id="viewselect" on-change="viewchange" title="Show and nest only the pieces of one view">
+          					<option value="" selected="{{ !viewsData.current }}">All pieces ({{viewsData.all}})</option>
+          					{{#each viewsData.list}}<option value="{{id}}" selected="{{ id === viewsData.current }}">{{name}} ({{count}})</option>{{/each}}
+          					{{#if viewsData.current}}
+          					<option disabled>──────────</option>
+          					<option value="__rename">Rename this view…</option>
+          					<option value="__delete">Delete this view…</option>
+          					{{/if}}
+          				</select>
+          			</label>
+          			{{/if}}
+          		</div>
           		<div class="lp-list">
+          			{{#if !layoutsData.shown}}<div class="lp-empty">No saved layouts{{#if viewsData.current}} in this view{{/if}} yet. Nest, then click Save layout.</div>{{/if}}
           			{{#with layoutsData.last}}
           			<div class="lp-row unsaved" title="The best layout from your last nest. Save it to keep it.">
           				<span class="name">{{name}}</span><span class="meta">{{meta}}</span>
@@ -278,7 +294,7 @@
           			</thead>
           			<tbody>
           				{{#each parts:i}}
-          					{{#if rowShown(this, parts, showExcluded, autoCuts)}}
+          					{{#if rowShown(this, parts, showExcluded, autoCuts, outOfView)}}
           					<tr on-mouseenter-mousedown="selecthandler:{{this}}" class='{{ selected ? "active" : "" }}{{ excluded ? " excluded" : "" }}'>
           						<td><input type="checkbox" class="includetoggle" checked="{{ !excluded }}" on-change="includetoggle:{{i}}" title="{{ sheet ? 'Use this sheet in the nest' : 'Include this piece in the nest' }}" /></td>
           						<td><span class="partthumb" data-index="{{i}}"></span> <span style="display: none">{{bounds.width}}</span></td>
@@ -354,6 +370,7 @@
                     <div class="pt-group">
                       <a href="#" class="button addsheet" id="addsheet" title="Add a sheet (a piece of fabric to nest on)">&nbsp;</a>
                       <a href="#" class='button delete {{ getSelected().length == 0 ? "disabled" : "" }}' on-click="delete" title="Delete the selected rows">&nbsp;</a>
+                      <a href="#" class="button" id="saveview" on-click="saveview" title="Make a view of the selected pieces (a pattern view, an expansion, a mix-and-match)">Save as view…</a>
                       <a href="#" class="button {{ parts.length == 0 ? "disabled" : "" }}" id="selectall" on-click="selectall">{{ getSelected().length == parts.length ? 'Deselect' : 'Select' }} all</a>
                     </div>
                     <div class="pt-group">

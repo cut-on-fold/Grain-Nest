@@ -1711,7 +1711,9 @@ export class DeepNest {
         // v1.9.0: with pairs & folds from cut codes, the count worked out
         // for this nest (nestQuantity); a skipped piece nests none.
         quantity:
-          this.parts[i].excluded || this.parts[i].autoSkip
+          this.parts[i].excluded ||
+          this.parts[i].autoSkip ||
+          this.parts[i].outOfView
             ? 0
             : typeof this.parts[i].nestQuantity === "number"
               ? this.parts[i].nestQuantity

@@ -33,6 +33,7 @@ import {
   primaryFold,
   type FuseMode,
 } from "../utils/auto-cuts.js";
+import type { ViewOption, ViewsService } from "../services/views.service.js";
 import type {
   LayoutFolder,
   LayoutRow,
@@ -285,10 +286,13 @@ interface PartsViewData {
   /** v1.10.0: the Saved layouts panel. */
   layoutsData: {
     any: boolean;
+    shown: boolean;
     last: LayoutRow | null;
     folders: LayoutFolder[];
   };
   layoutsHeight: number;
+  /** v1.11.0: the View menu. */
+  viewsData: { all: number; list: ViewOption[]; current: string };
 }
 
 /** v1.10.0: remembered height of the Saved layouts panel (px). */
@@ -704,6 +708,7 @@ export class PartsViewService {
    */
   isRowVisible(p: Part): boolean {
     if (p.autoCopy) return false;
+    if (p.outOfView) return false;
     if (this.autoCutsOn() && isCoveredCopy(this.deepNest.parts, p))
       return false;
     return !!this.ractive?.get("showExcluded") || !!p.sheet || !p.excluded;
@@ -739,15 +744,30 @@ export class PartsViewService {
     this.refreshLayouts();
   }
 
-  /** Redraws the Saved layouts panel. */
+  /** Redraws the Saved layouts panel (and its View menu). */
   refreshLayouts(): void {
     if (!this.ractive || !this.layouts) return;
     const { last, folders } = this.layouts.folders();
+    const hasViews = !!this.views && this.views.hasViews();
     this.ractive.set("layoutsData", {
-      any: this.layouts.hasAny(),
+      any: this.layouts.hasAny() || hasViews,
+      shown: this.layouts.hasShown(),
       last,
       folders,
     });
+    if (this.views) this.ractive.set("viewsData", this.views.options());
+  }
+
+  /** v1.11.0: views (the View menu, Save as view). */
+  private views: ViewsService | null = null;
+
+  attachViews(views: ViewsService): void {
+    this.views = views;
+    views.onChange = () => {
+      this.refreshLayouts();
+      if (this.ractive) this.ractive.update("parts");
+    };
+    this.refreshLayouts();
   }
 
   /** v1.9.0: the cut-code settings changed; redraw the rows. */
@@ -796,10 +816,12 @@ export class PartsViewService {
         nestJob: (deepNest.nestJob as NestJob | undefined) || "all",
         showExcluded: true,
         excludedCount: function (parts: Part[]): number {
-          return parts.filter((p) => !p.sheet && p.excluded && !p.autoCopy)
-            .length;
+          return parts.filter(
+            (p) => !p.sheet && p.excluded && !p.autoCopy && !p.outOfView,
+          ).length;
         },
-        layoutsData: { any: false, last: null, folders: [] },
+        layoutsData: { any: false, shown: false, last: null, folders: [] },
+        viewsData: { all: 0, list: [], current: "" },
         layoutsHeight: savedLayoutsHeight(),
         // v1.9.0: pairs & folds from cut codes (see utils/auto-cuts.ts).
         // The template also passes the row's fields they read (name,
@@ -813,6 +835,9 @@ export class PartsViewService {
           autoCuts: boolean,
         ): boolean {
           if (p.autoCopy) return false;
+          // v1.11.0: pieces outside the view shown (the template passes
+          // outOfView so the row redraws when it changes).
+          if (p.outOfView) return false;
           if (autoCuts && isCoveredCopy(parts, p)) return false;
           return showExcluded || !!p.sheet || !p.excluded;
         },
@@ -1229,6 +1254,23 @@ export class PartsViewService {
       "layoutfolder",
       layoutAction((fabric) => this.layouts!.toggleFolder(fabric)),
     );
+    // v1.11.0: views.
+    ractive.on("saveview", (): boolean => {
+      if (this.views) void this.views.saveAsView();
+      return false;
+    });
+    ractive.on("viewchange", (e: RactiveEvent): boolean => {
+      const sel = e.original.target as HTMLSelectElement;
+      const v = sel.value;
+      if (!this.views) return false;
+      if (v === "__rename") void this.views.renameCurrent();
+      else if (v === "__delete") void this.views.deleteCurrent();
+      else this.views.choose(v);
+      // The menu shows the view in use (rename/delete aren't kept).
+      this.refreshLayouts();
+      sel.value = this.views.options().current;
+      return false;
+    });
     ractive.on("layoutsavelast", (): boolean => {
       if (this.layouts) void this.layouts.saveLastNest();
       return false;

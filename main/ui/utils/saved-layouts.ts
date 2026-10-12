@@ -59,6 +59,8 @@ export interface SavedLayout {
   savedAt: string;
   /** The "Nest for" job it was nested for. */
   job: string;
+  /** v1.11.0: the view it was saved in (absent = All pieces). */
+  view?: string;
   /** Fabric length used, in mm. */
   lengthMm: number;
   placed: number;
@@ -132,7 +134,7 @@ function realPart(p: Part): Part {
 
 /** Copies of a part that go into the nest (see nest-rank copiesToNest). */
 function inNest(p: Part): boolean {
-  if (p.sheet || p.excluded || p.autoSkip) return false;
+  if (p.sheet || p.excluded || p.autoSkip || p.outOfView) return false;
   return typeof p.nestQuantity === "number" ? p.nestQuantity > 0 : true;
 }
 
@@ -182,6 +184,9 @@ export function captureLayout(
     fabric,
     savedAt: new Date().toISOString(),
     job: (dn.nestJob as string | undefined) || "all",
+    view:
+      (dn as DeepNestInstance & { currentViewId?: string | null })
+        .currentViewId || undefined,
     lengthMm: (lengthSvg / (scale || 96)) * 25.4,
     placed: piecesPlaced(nest),
     total: piecesToPlace(dn),

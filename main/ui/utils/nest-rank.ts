@@ -77,7 +77,7 @@ export function piecesPlaced(nest: SelectableNestingResult): number {
  * its Quantity. Matches DeepNest.start().
  */
 export function copiesToNest(p: Part): number {
-  if (p.excluded || p.autoSkip) return 0;
+  if (p.excluded || p.autoSkip || p.outOfView) return 0;
   if (typeof p.nestQuantity === "number") return p.nestQuantity;
   return p.quantity || 1;
 }

@@ -489,7 +489,10 @@ export class NestingService {
     }
 
     // phase-r8a: every piece excluded (Nest tick boxes / "Nest for" job).
-    if (!this.deepNest.parts.some((p) => !p.sheet && !p.excluded)) {
+    // v1.11.0: pieces outside the view shown don't count.
+    if (
+      !this.deepNest.parts.some((p) => !p.sheet && !p.excluded && !p.outOfView)
+    ) {
       message(
         'No pieces are included in this nest — tick some in the "Nest" column or pick a different "Nest for" job.',
       );

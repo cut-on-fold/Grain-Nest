@@ -78,9 +78,38 @@ export class LayoutsService {
     return bits.join(" · ");
   }
 
+  /** v1.11.0: whether a layout belongs to the view being shown. */
+  private inView(l: SavedLayout): boolean {
+    const cur = (this.deepNest as { currentViewId?: string | null })
+      .currentViewId;
+    return (l.view ?? null) === (cur ?? null);
+  }
+
+  /** The layouts of the view being shown. */
+  private shownLayouts(): SavedLayout[] {
+    return layoutsOf(this.deepNest).filter((l) => this.inView(l));
+  }
+
+  /** How many layouts a view has (for the Delete view warning). */
+  countInView(viewId: string): number {
+    return layoutsOf(this.deepNest).filter((l) => l.view === viewId).length;
+  }
+
+  /** v1.11.0: deleting a view deletes its layouts. */
+  removeLayoutsOfView(viewId: string): void {
+    const layouts = layoutsOf(this.deepNest);
+    for (let i = layouts.length - 1; i >= 0; i--) {
+      if (layouts[i].view === viewId) layouts.splice(i, 1);
+    }
+    const last = lastNestOf(this.deepNest);
+    if (last && last.view === viewId) setLastNest(this.deepNest, null);
+    this.onChange();
+  }
+
   /** The panel's contents: Last nest first, then a folder per fabric. */
   folders(): { last: LayoutRow | null; folders: LayoutFolder[] } {
-    const lastLayout = lastNestOf(this.deepNest);
+    const lastAny = lastNestOf(this.deepNest);
+    const lastLayout = lastAny && this.inView(lastAny) ? lastAny : null;
     const last = lastLayout
       ? {
           id: LAST_NEST_ID,
@@ -92,7 +121,7 @@ export class LayoutsService {
       : null;
     const order = SHEET_FABRICS.map((f) => f.id as string);
     const byFabric = new Map<string, SavedLayout[]>();
-    for (const l of layoutsOf(this.deepNest)) {
+    for (const l of this.shownLayouts()) {
       byFabric.set(l.fabric, [...(byFabric.get(l.fabric) ?? []), l]);
     }
     const fabrics = [...byFabric.keys()].sort(
@@ -119,6 +148,12 @@ export class LayoutsService {
 
   hasAny(): boolean {
     return !!lastNestOf(this.deepNest) || layoutsOf(this.deepNest).length > 0;
+  }
+
+  /** Anything to list in the view being shown. */
+  hasShown(): boolean {
+    const last = lastNestOf(this.deepNest);
+    return (!!last && this.inView(last)) || this.shownLayouts().length > 0;
   }
 
   toggleFolder(fabric: string): void {
@@ -206,7 +241,9 @@ export class LayoutsService {
       const layouts = layoutsOf(this.deepNest);
       const same = layouts.find(
         (l) =>
-          l.fabric === fabric && l.name.toLowerCase() === name.toLowerCase(),
+          this.inView(l) &&
+          l.fabric === fabric &&
+          l.name.toLowerCase() === name.toLowerCase(),
       );
       if (same) {
         const d = await showModal({

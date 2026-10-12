@@ -24,6 +24,7 @@ This guide is for version 1.5.0 on a Mac with Apple Silicon.
 - [Working with the parts list](#working-with-the-parts-list)
 - [Running a nest](#running-a-nest)
 - [Saved layouts](#saved-layouts)
+- [Views](#views)
 - [What's in the exported SVG](#whats-in-the-exported-svg)
 - [Exporting a cut list](#exporting-a-cut-list)
 - [Saving and reopening a project](#saving-and-reopening-a-project)
@@ -753,6 +754,46 @@ again** to stop the question; turn it back on under Settings → Nesting → **A
 before leaving an unsaved layout**. The layout is still kept as **Last nest
 (not saved)**.
 
+## Views
+
+A **view** is a named set of pieces in a project: one view of a pattern
+(View A, View B), an expansion pack, or a mix-and-match (the bodice of one
+pattern with the sleeves of another). Picking a view shows **only its
+pieces**, nests only those, and lists only the layouts saved in it. A piece
+can be in several views; sheets are always shown.
+
+### Making a view
+
+1. Select the pieces in the parts list (click their rows).
+2. Click **Save as view…** in the toolbar under the list.
+3. Type a name, or choose **Replace** an existing view to change which
+   pieces it has. Replacing asks first and says which pieces are added and
+   taken out.
+
+### The View menu
+
+Once there's a view, a **View** menu appears at the top of the Saved layouts
+panel: **All pieces** and each view, with how many pieces it has. Pick one to
+show it. **Nest for** still picks the fabric within the view (e.g. View B,
+Lining).
+
+With a view picked, the same menu has **Rename this view…** and **Delete this
+view…**. Deleting a view **deletes its saved layouts too** (it says how many
+first); your pieces aren't deleted — they're still in All pieces.
+
+### Saved layouts and views
+
+A layout belongs to the view it was saved in, and is listed only there.
+Opening it switches to that view.
+
+### Importing into a view
+
+Importing while a view is shown (an expansion, or sleeves from another
+pattern) asks whether to **add the new pieces to that view**. They're in All
+pieces either way.
+
+Views and the view shown are saved with the project.
+
 ## What's in the exported SVG
 
 The exported file is laid out like your pattern file, so it's easy to open in
@@ -851,8 +892,8 @@ Two buttons in the top bar:
 A project keeps your pieces with their names, grain rules, marked grain lines,
 tops, mirrors and mirror copies, cut-on-fold and marked folds, quantities, seam
 allowances, Nest ticks, sheets (with their names and fabrics), the Nest for
-choice, Woven/Knit and Nap, and your [saved layouts](#saved-layouts) (and the
-last nest).
+choice, Woven/Knit and Nap, your [saved layouts](#saved-layouts) (and the
+last nest), and your [views](#views).
 
 The `.gnp` file is **self-contained** — it holds a full copy of every imported
 SVG, so you can move it to another computer without the original files. If you

@@ -177,6 +177,19 @@ test("Save, leave, reopen and reload saved layouts", async () => {
   await page.waitForTimeout(2500);
   await expect(saved.locator(".warn")).toHaveCount(1);
 
+  // v1.11.0: a piece left out by hand (same fabric) shows in the banner,
+  // and opening the layout doesn't tick it back in.
+  const cuffRow = page.locator("#partslist tbody tr", {
+    has: page.locator('input.partname[value="7 Skirt Back C2M"]'),
+  });
+  await cuffRow.locator("input.includetoggle").uncheck();
+  await saved.getByText("Open").click();
+  await expect(banner).toContainText("7 Skirt Back C2M: left out of the nest");
+  await banner.getByText("Keep as saved").click();
+  await page.click("id=back");
+  await page.waitForTimeout(2500);
+  await expect(cuffRow.locator("input.includetoggle")).not.toBeChecked();
+
   // Delete it.
   await saved.getByText("Delete").click();
   await modal.locator("button[data-id=delete]").click();

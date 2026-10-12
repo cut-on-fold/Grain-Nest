@@ -251,6 +251,7 @@ interface AutoCutPart extends AutoCutPiece {
   userUnfolded?: boolean;
   nestQuantity?: number;
   autoSkip?: boolean;
+  outOfView?: boolean;
   autoCopy?: boolean;
   autoCopyOf?: unknown;
 }
@@ -306,7 +307,7 @@ export function applyAutoCuts<P extends AutoCutPart>(
   clearAutoCuts(dn);
   const report: AutoCutsReport = { uncoded: [], foldFailed: [] };
   const originals = dn.parts.filter(
-    (p) => !p.sheet && !p.isMirrorCopy && !p.excluded,
+    (p) => !p.sheet && !p.isMirrorCopy && !p.excluded && !p.outOfView,
   );
   const coded = new Set<P>();
   for (const p of originals) {

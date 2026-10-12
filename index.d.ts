@@ -297,6 +297,11 @@ export type Part = {
   autoCopy?: boolean;
   autoCopyOf?: Part;
   userUnfolded?: boolean;
+  /**
+   * v1.11.0: not in the view being shown (utils/views.ts): hidden from the
+   * list and nested as none. Never saved; worked out when the view changes.
+   */
+  outOfView?: boolean;
 };
 
 /**

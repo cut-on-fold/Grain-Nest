@@ -75,6 +75,8 @@ import {
   type SavedLayout,
 } from "./utils/saved-layouts.js";
 import { LayoutsService } from "./services/layouts.service.js";
+import { ViewsService } from "./services/views.service.js";
+import { clearViews, refreshViewFlags, setCurrentView } from "./utils/views.js";
 import type { NestJob } from "./utils/nest-jobs.js";
 import { getElement, getElements } from "./utils/dom-utils.js";
 import {
@@ -209,6 +211,7 @@ let nestViewService: NestViewService;
 let sheetDialogService: SheetDialogService;
 let projectService: ProjectService;
 let layoutsService: LayoutsService;
+let viewsService: ViewsService;
 
 /**
  * Electron and Node.js module references
@@ -348,6 +351,8 @@ async function prepareAutoCuts(warn: boolean): Promise<boolean> {
   hideNestBanner();
   nestState.opened = null;
   nestState.saved = null;
+  // v1.11.0: only the pieces of the view shown nest.
+  refreshViewFlags(dn);
   if (configService.getSync("autoCutsFromCodes") === false) {
     clearAutoCuts(dn);
     return true;
@@ -484,7 +489,14 @@ async function saveShownLayout(): Promise<void> {
 function openLayout(layout: SavedLayout): void {
   const dn = getDeepNest();
   const job = (layout.job || "all") as NestJob;
-  partsViewService.setNestJob(job);
+  // v1.11.0: a layout opens in its own view.
+  setCurrentView(dn, layout.view ?? null);
+  partsViewService.refreshLayouts();
+  // Nest for switches only when the layout is for another fabric: on the
+  // same one, ticks set by hand stay (re-applying the job reset them, and
+  // hid pieces added or left out since — v1.11.0).
+  if (((dn.nestJob as string | undefined) || "all") !== job)
+    partsViewService.setNestJob(job);
   if (configService.getSync("autoCutsFromCodes") === false) clearAutoCuts(dn);
   else
     applyAutoCuts(
@@ -815,6 +827,9 @@ function initializeComponents(): void {
   );
   layoutsService.onOpen = openLayout;
   partsViewService.attachLayouts(layoutsService);
+  // v1.11.0: views (the View menu above the saved layouts).
+  viewsService = new ViewsService(getDeepNest(), layoutsService);
+  partsViewService.attachViews(viewsService);
 
   // Initialize nest view
   nestViewService = createNestViewService({
@@ -981,7 +996,16 @@ function initializeImportButton(): void {
 
       try {
         importButton.className = "button import spinner";
+        // v1.11.0: with a view shown, ask whether the new pieces join it.
+        const dn = getDeepNest();
+        const before = dn.parts.length;
+        const importsBefore = dn.imports.length;
         await importService.showImportDialog();
+        const names = dn.imports
+          .slice(importsBefore)
+          .map((im) => im.filename)
+          .join(", ");
+        await viewsService.afterImport(dn.parts.slice(before), names);
       } finally {
         importButton.className = "button import";
       }
@@ -1093,6 +1117,7 @@ function initializeClearAllButton(): void {
     dn.nests.length = 0;
     dn.nestJob = "all"; // phase-r8a: an empty workspace has no nest job
     layoutsService.clear(); // v1.10.0
+    clearViews(dn); // v1.11.0
     // Refresh the parts table + import preview.
     const partsRactive = partsViewService.getRactive() as unknown as {
       update(keypath?: string): Promise<void>;

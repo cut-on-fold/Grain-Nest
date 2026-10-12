@@ -33,6 +33,12 @@ import {
   setLastNest,
   type SavedLayoutFile,
 } from "../utils/saved-layouts.js";
+import {
+  clearViews,
+  viewsForFile,
+  viewsFromFile,
+  type PieceViewFile,
+} from "../utils/views.js";
 
 /**
  * File system interface — minimal slice this service needs. Matches
@@ -157,6 +163,9 @@ interface ProjectFileV1 {
   layouts?: SavedLayoutFile[];
   /** v1.10.0: the best layout of the last nest, not saved by name. */
   lastNest?: SavedLayoutFile;
+  /** v1.11.0: views (pieces as positions in `parts`), and the one shown. */
+  views?: PieceViewFile[];
+  currentView?: string;
 }
 
 const PROJECT_FILE_FILTERS: FileFilter[] = [
@@ -483,6 +492,7 @@ export class ProjectService {
       nests: [],
       layouts,
       lastNest,
+      ...viewsForFile(this.deepNest, savedIndexOfPid),
       nap: !!this.deepNest.nap,
       fabricType: this.deepNest.fabricType === "knit" ? "knit" : undefined,
       nestJob: this.deepNest.nestJob,
@@ -714,6 +724,12 @@ export class ProjectService {
       const l = layoutFromFile(this.deepNest, lf, (i) => partAtSaved[i]);
       if (l) layouts.push(l);
     }
+    viewsFromFile(
+      this.deepNest,
+      data.views,
+      data.currentView,
+      (i) => partAtSaved[i],
+    );
     setLastNest(
       this.deepNest,
       data.lastNest
@@ -781,6 +797,7 @@ export class ProjectService {
     this.deepNest.nests.length = 0;
     layoutsOf(this.deepNest).length = 0;
     setLastNest(this.deepNest, null);
+    clearViews(this.deepNest);
     if (this.partsRactive) {
       this.partsRactive.update("imports");
       this.partsRactive.update("parts");
