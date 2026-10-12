@@ -74,6 +74,9 @@ export const DEFAULT_CONFIG: Readonly<UIConfig> = {
   // ("C2M", "C1MOF"); equal main & interfacing counts bulk-fuse.
   autoCutsFromCodes: true,
   equalCutsFuse: "fuse",
+  // v1.10.0: "Don't ask again" on these two questions turns them off.
+  warnUncodedPieces: true,
+  askBeforeLeavingNest: true,
   // v1.3.0: bumped when saved settings need a one-off migration.
   settingsRevision: 3,
 };
@@ -90,6 +93,8 @@ export const BOOLEAN_CONFIG_KEYS: ReadonlyArray<keyof UIConfig> = [
   "exportWithSheetsSpace",
   "exportScalingBox",
   "autoCutsFromCodes",
+  "warnUncodedPieces",
+  "askBeforeLeavingNest",
 ];
 
 /**

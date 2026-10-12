@@ -48,6 +48,21 @@ export function patternSource(deepNest: DeepNestInstance): {
   return base ? { base, dir: imp.dirpath || null } : null;
 }
 
+/**
+ * "58in" or "150cm": a sheet's width (its height in the drawing, selvedge
+ * to selvedge) in the display units.
+ */
+export function widthTag(
+  heightSvg: number,
+  units: string,
+  scale: number,
+): string {
+  const inches = heightSvg / (scale || 96);
+  return units === "mm"
+    ? `${Math.round(inches * 2.54)}cm`
+    : `${Math.round(inches * 10) / 10}in`;
+}
+
 /** "Main_58in" for each different sheet fabric and width in a layout. */
 export function fabricWidthTag(
   deepNest: DeepNestInstance,
@@ -64,12 +79,7 @@ export function fabricWidthTag(
       | undefined;
     if (!sheet || !sheet.bounds) continue;
     const fabric = FABRIC_NAMES[sheet.fabric || ""] || "Fabric";
-    const inches = sheet.bounds.height / (scale || 96);
-    const width =
-      units === "mm"
-        ? `${Math.round(inches * 2.54)}cm`
-        : `${Math.round(inches * 10) / 10}in`;
-    const tag = `${fabric}_${width}`;
+    const tag = `${fabric}_${widthTag(sheet.bounds.height, units, scale)}`;
     if (!tags.includes(tag)) tags.push(tag);
   }
   return tags.join("_");

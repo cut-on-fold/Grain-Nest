@@ -6,7 +6,7 @@
 import { _electron as electron, expect, test } from "@playwright/test";
 import { OpenDialogReturnValue } from "electron";
 import path from "path";
-import { setCutCodes } from "./helpers/cut-codes";
+import { setAskBeforeLeaving, setCutCodes } from "./helpers/cut-codes";
 
 type Cut = { asDrawn: number; mirrored: number; fold: boolean } | null;
 
@@ -15,6 +15,8 @@ test("Cut-code rules: pairs, folds, fusing and overrides", async () => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Goes Back without saving layouts (v1.10.0).
+  await setAskBeforeLeaving(mainWindow, false);
   await mainWindow.evaluate(async () => {
     const start = Date.now();
     while (!(window as unknown as { DeepNest?: unknown }).DeepNest) {
@@ -98,6 +100,7 @@ test("Cut-code rules: pairs, folds, fusing and overrides", async () => {
   expect(r.oneJobs).toEqual(["fused", "main"]);
   expect(r.intPiece).toEqual({ asDrawn: 1, mirrored: 0, fold: false });
   expect(r.intPieceMain).toEqual({ asDrawn: 0, mirrored: 0, fold: false });
+  await setAskBeforeLeaving(mainWindow, true);
   await electronApp.close();
 });
 
@@ -119,6 +122,8 @@ test("A nest makes the pairs and folds from the cut codes", async () => {
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Goes Back without saving layouts (v1.10.0).
+  await setAskBeforeLeaving(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -281,6 +286,7 @@ test("A nest makes the pairs and folds from the cut codes", async () => {
     return out;
   });
   expect(zero).toEqual([{ q: 2, copy: false }]);
+  await setAskBeforeLeaving(mainWindow, true);
   await electronApp.close();
 });
 
@@ -290,6 +296,8 @@ test("With the setting off, Quantity and Mirror copy work as before", async () =
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Goes Back without saving layouts (v1.10.0).
+  await setAskBeforeLeaving(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -338,5 +346,6 @@ test("With the setting off, Quantity and Mirror copy work as before", async () =
     await mainWindow.locator("#config_tab").click();
     await mainWindow.locator("#autoCutsFromCodes").check();
   }
+  await setAskBeforeLeaving(mainWindow, true);
   await electronApp.close();
 });

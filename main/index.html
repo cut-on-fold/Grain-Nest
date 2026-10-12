@@ -107,6 +107,8 @@
             <!--<li id="exportgcode">GCode file</li>-->
           </ul>
         </span>
+        <!-- v1.10.0: keep the layout on screen in the project. -->
+        <li class="button savelayout" id="savelayout" title="Keep this layout in the project, to open and export again without re-nesting">Save layout</li>
         <li class="button back" id="back">Back</li>
 
         <!-- progress bars -->
@@ -229,6 +231,32 @@
           </ul>
 
           <div id="parts" class="parts-drag">
+
+          	<!-- v1.10.0: saved layouts (services/layouts.service.ts), above the
+          	     pieces, with a divider to share the space. -->
+          	{{#if layoutsData.any}}
+          	<div id="layoutspanel" style="height: {{layoutsHeight}}px">
+          		<div class="lp-head">Saved layouts</div>
+          		<div class="lp-list">
+          			{{#with layoutsData.last}}
+          			<div class="lp-row unsaved" title="The best layout from your last nest. Save it to keep it.">
+          				<span class="name">{{name}}</span><span class="meta">{{meta}}</span>
+          				<span class="acts"><a href="#" on-click="layoutopen:{{id}}">Open</a><a href="#" class="lp-save" on-click="layoutsavelast">Save</a><a href="#" on-click="layoutdelete:{{id}}">Delete</a></span>
+          			</div>
+          			{{/with}}
+          			{{#each layoutsData.folders}}
+          			<div class="lp-folder" on-click="layoutfolder:{{fabric}}">{{ open ? "▾" : "▸" }} {{label}} <span class="n">({{rows.length}})</span></div>
+          			{{#if open}}{{#each rows}}
+          			<div class="lp-row" data-layout="{{id}}">
+          				<span class="name">{{name}}{{#if changed}}<span class="warn" title="Pieces changed since this was saved">⚠</span>{{/if}}</span><span class="meta">{{meta}}</span>
+          				<span class="acts"><a href="#" on-click="layoutopen:{{id}}">Open</a><a href="#" on-click="layoutrename:{{id}}">Rename</a><a href="#" on-click="layoutdelete:{{id}}">Delete</a></span>
+          			</div>
+          			{{/each}}{{/if}}
+          			{{/each}}
+          		</div>
+          	</div>
+          	<div id="lp-divider" title="Drag to share the space between saved layouts and pieces"></div>
+          	{{/if}}
 
           	<div id="partscroll">
           		<table id="partslist">
@@ -455,6 +483,14 @@
                 </option>
               </select>
             </dd>
+            <dt>Ask before leaving an unsaved layout</dt>
+            <dd>
+              <input
+                id="askBeforeLeavingNest"
+                type="checkbox"
+                data-config="askBeforeLeavingNest"
+              />
+            </dd>
           </dl>
           <h1>Seam allowance</h1>
           <dl class="formgroup">
@@ -491,6 +527,14 @@
                 id="autoCutsFromCodes"
                 type="checkbox"
                 data-config="autoCutsFromCodes"
+              />
+            </dd>
+            <dt>Ask about pieces without a code</dt>
+            <dd>
+              <input
+                id="warnUncodedPieces"
+                type="checkbox"
+                data-config="warnUncodedPieces"
               />
             </dd>
             <dt>Equal main &amp; interfacing</dt>
@@ -1438,6 +1482,22 @@
           These use their Quantity. You're warned before nesting.
           <p>Off: every piece uses its Quantity, Mirror copy and Fold as you
           set them.</p>
+        </div>
+
+        <div class="config_explain" id="explain_warnUncodedPieces">
+          <h1>Ask about pieces without a code</h1>
+          Before a nest, lists the pieces whose names have no cut code (they're
+          cut as their Quantity says) and asks whether to go ahead. Ticking
+          "Don't ask again" there turns this off; the list then shows as a
+          reminder on the nest screen instead.
+        </div>
+
+        <div class="config_explain" id="explain_askBeforeLeavingNest">
+          <h1>Ask before leaving an unsaved layout</h1>
+          Going Back from the nest screen with a layout you haven't saved asks
+          whether to save it. Either way, the best layout is kept as
+          <em>Last nest (not saved)</em> above your pieces until the next nest.
+          Ticking "Don't ask again" there turns this off.
         </div>
 
         <div class="config_explain" id="explain_equalCutsFuse">

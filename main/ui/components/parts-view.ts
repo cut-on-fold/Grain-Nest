@@ -33,6 +33,11 @@ import {
   primaryFold,
   type FuseMode,
 } from "../utils/auto-cuts.js";
+import type {
+  LayoutFolder,
+  LayoutRow,
+  LayoutsService,
+} from "../services/layouts.service.js";
 import {
   NEST_JOBS,
   applyNestJob,
@@ -277,6 +282,25 @@ interface PartsViewData {
   mirrorChoices: (...args: never[]) => unknown[];
   fuseChoice: (...args: never[]) => boolean;
   fuseChoices: (...args: never[]) => unknown[];
+  /** v1.10.0: the Saved layouts panel. */
+  layoutsData: {
+    any: boolean;
+    last: LayoutRow | null;
+    folders: LayoutFolder[];
+  };
+  layoutsHeight: number;
+}
+
+/** v1.10.0: remembered height of the Saved layouts panel (px). */
+const LAYOUTS_HEIGHT_KEY = "grainnest.layoutsHeight";
+function savedLayoutsHeight(): number {
+  try {
+    const v = Number(localStorage.getItem(LAYOUTS_HEIGHT_KEY));
+    if (v >= 48 && v <= 600) return v;
+  } catch {
+    /* default */
+  }
+  return 170;
 }
 
 /**
@@ -695,6 +719,37 @@ export class PartsViewService {
     return applyNestJob(this.deepNest.parts, job, (p) => jobsForPiece(p, bulk));
   }
 
+  /** v1.10.0: picks a "Nest for" job, as the drop-down does. */
+  setNestJob(job: NestJob): void {
+    this.deepNest.nestJob = job;
+    this.applyJob(job);
+    if (this.ractive) {
+      this.ractive.set("nestJob", job);
+      this.ractive.update("parts");
+    }
+  }
+
+  /** v1.10.0: the saved layouts behind the panel. */
+  private layouts: LayoutsService | null = null;
+
+  /** v1.10.0: show the Saved layouts panel for these layouts. */
+  attachLayouts(layouts: LayoutsService): void {
+    this.layouts = layouts;
+    layouts.onChange = () => this.refreshLayouts();
+    this.refreshLayouts();
+  }
+
+  /** Redraws the Saved layouts panel. */
+  refreshLayouts(): void {
+    if (!this.ractive || !this.layouts) return;
+    const { last, folders } = this.layouts.folders();
+    this.ractive.set("layoutsData", {
+      any: this.layouts.hasAny(),
+      last,
+      folders,
+    });
+  }
+
   /** v1.9.0: the cut-code settings changed; redraw the rows. */
   updateAutoCuts(): void {
     if (!this.ractive) return;
@@ -744,6 +799,8 @@ export class PartsViewService {
           return parts.filter((p) => !p.sheet && p.excluded && !p.autoCopy)
             .length;
         },
+        layoutsData: { any: false, last: null, folders: [] },
+        layoutsHeight: savedLayoutsHeight(),
         // v1.9.0: pairs & folds from cut codes (see utils/auto-cuts.ts).
         // The template also passes the row's fields they read (name,
         // mirrorCount, …) so Ractive redraws them when those change.
@@ -1148,6 +1205,60 @@ export class PartsViewService {
         return false;
       },
     );
+
+    // v1.10.0: Saved layouts panel.
+    const layoutAction =
+      (run: (id: string) => void) =>
+      (_e: RactiveEvent, ...args: unknown[]): boolean => {
+        if (this.layouts) run(String(args[0]));
+        return false;
+      };
+    ractive.on(
+      "layoutopen",
+      layoutAction((id) => this.layouts!.open(id)),
+    );
+    ractive.on(
+      "layoutrename",
+      layoutAction((id) => void this.layouts!.rename(id)),
+    );
+    ractive.on(
+      "layoutdelete",
+      layoutAction((id) => void this.layouts!.remove(id)),
+    );
+    ractive.on(
+      "layoutfolder",
+      layoutAction((fabric) => this.layouts!.toggleFolder(fabric)),
+    );
+    ractive.on("layoutsavelast", (): boolean => {
+      if (this.layouts) void this.layouts.saveLastNest();
+      return false;
+    });
+    // Dragging the divider shares the space with the pieces.
+    document.addEventListener("mousedown", (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!target || target.id !== "lp-divider") return;
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = ractive.get("layoutsHeight") as number;
+      const move = (m: MouseEvent): void => {
+        const h = Math.max(48, Math.min(600, startH + m.clientY - startY));
+        ractive.set("layoutsHeight", h);
+      };
+      const up = (): void => {
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+        try {
+          localStorage.setItem(
+            LAYOUTS_HEIGHT_KEY,
+            String(ractive.get("layoutsHeight")),
+          );
+        } catch {
+          /* not remembered */
+        }
+      };
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    });
 
     ractive.on("toggleexcluded", (): boolean | void => {
       ractive.set("showExcluded", !ractive.get("showExcluded"));

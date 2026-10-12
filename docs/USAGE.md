@@ -23,6 +23,7 @@ This guide is for version 1.5.0 on a Mac with Apple Silicon.
 - [Sheets of fabric](#sheets-of-fabric)
 - [Working with the parts list](#working-with-the-parts-list)
 - [Running a nest](#running-a-nest)
+- [Saved layouts](#saved-layouts)
 - [What's in the exported SVG](#whats-in-the-exported-svg)
 - [Exporting a cut list](#exporting-a-cut-list)
 - [Saving and reopening a project](#saving-and-reopening-a-project)
@@ -435,7 +436,10 @@ from the cut code when you click **Start nest**:
   isn't shown on pieces with a code.
 - **Pieces without a code** are cut as their Quantity says, none mirrored.
   Grain-Nest lists them and asks before nesting, in case one of their names is
-  missing its code.
+  missing its code. Tick **Don't ask again** if your patterns don't use codes;
+  the list then shows as a reminder banner on the nest screen instead (turn the
+  question back on under Settings → Cut codes → **Ask about pieces without a
+  code**).
 - Projects made before this version may have their own mirror copies. With the
   setting on, a mirror copy of a piece with a code is hidden and not nested
   (the code already counts it), so pairs aren't doubled. Turn the setting off
@@ -686,11 +690,68 @@ far.
   `Coat_Nested_Main_150cm.svg` when working in mm), and the cut list
   `Coat_Nested_Main_58in_CutList.txt`. A layout over several fabrics lists
   each one.
-- **Back** returns to the parts list. This stops the nest and **clears the
-  results**, so export what you want to keep first.
+- **Save layout** keeps the layout shown in the project, so you can open and
+  export it again later without re-nesting — see [Saved layouts](#saved-layouts).
+- **Back** returns to the parts list. This stops the nest and clears the list
+  of results. If the layout shown isn't saved, Grain-Nest asks first
+  (**Save layout…**, **Leave** or **Cancel**); either way it's kept as **Last
+  nest (not saved)** until your next nest.
 
 A nest with grain rules usually uses a little more fabric than one where pieces
 can turn freely — that's the cost of cutting on grain.
+
+## Saved layouts
+
+A layout you like can be kept in the project and opened again later — to
+export it again, or to compare fabrics and widths — without re-nesting.
+
+### Saving a layout
+
+On the nest screen, click **Save layout**. Grain-Nest suggests a name from
+the sheet: its name and width, e.g. *Navy twill_58in* (or *Main fabric_150cm*
+if the sheet has no name). Change it if you like. The **Folder** is the
+sheet's fabric (Main fabric, Lining, Fused…), so the same pattern cut from
+different fabrics or widths stays apart.
+
+If a layout with the same name is already in that folder, Grain-Nest asks
+whether to **Replace** it or **Save as a new name**.
+
+### The Saved layouts panel
+
+Saved layouts are listed above your pieces, in a folder per fabric (click a
+folder to open or close it). Each shows the fabric length it uses and how many
+pieces it fits (*10/10*), with:
+
+- **Open** — goes straight to the nest screen with that layout, ready to
+  export. Nest for switches to the layout's fabric, and the pairs it used are
+  made again.
+- **Rename** and **Delete** — deleting a layout doesn't change your pieces.
+
+Drag the bar between the panel and your pieces to share the space. The panel
+only appears once there's a layout in it.
+
+**Last nest (not saved)** at the top is the best layout from your most recent
+nest that you didn't save. Click **Save** to keep it under a name. It's
+replaced by the next nest you leave without saving.
+
+### When pieces have changed
+
+Each layout remembers how its pieces were set up. If you open one after
+changing them — a seam allowance, a fold, the number to cut, a renamed,
+deleted or added piece — a banner on the nest screen says what changed, and
+the layout gets a ⚠ in the list:
+
+- **Re-nest with the new pieces** starts a fresh nest with the pieces as they
+  are now.
+- **Keep as saved** keeps the layout (it's drawn with the pieces as they are
+  now, so changed pieces may overlap or not fit).
+
+### Leaving without saving
+
+Going **Back** from a layout you haven't saved asks first. Tick **Don't ask
+again** to stop the question; turn it back on under Settings → Nesting → **Ask
+before leaving an unsaved layout**. The layout is still kept as **Last nest
+(not saved)**.
 
 ## What's in the exported SVG
 
@@ -790,14 +851,16 @@ Two buttons in the top bar:
 A project keeps your pieces with their names, grain rules, marked grain lines,
 tops, mirrors and mirror copies, cut-on-fold and marked folds, quantities, seam
 allowances, Nest ticks, sheets (with their names and fabrics), the Nest for
-choice, Woven/Knit and Nap.
+choice, Woven/Knit and Nap, and your [saved layouts](#saved-layouts) (and the
+last nest).
 
 The `.gnp` file is **self-contained** — it holds a full copy of every imported
 SVG, so you can move it to another computer without the original files. If you
 later change the original SVG, import it again; the project's copy doesn't
 update by itself.
 
-Not saved: which preview tab was open, the zoom, and which layout was selected.
+Not saved: which preview tab was open, the zoom, and the list of results on
+the nest screen (save the ones you want with **Save layout**).
 
 ## Settings
 
@@ -817,10 +880,14 @@ everything back.
       of interfacing to the fashion fabric and cut the pieces from it, with as
       little interfacing wasted as possible (interfacing is usually much
       narrower than the fabric).
+  - **Ask before leaving an unsaved layout** — on by default; see
+    [Leaving without saving](#leaving-without-saving).
 - **Seam allowance** — the default for wovens (12 mm) and knits (10 mm).
 - **Cut codes**
   - **Pairs & folds from cut codes** — on by default. See
     [Pairs and folds from cut codes](#pairs-and-folds-from-cut-codes).
+  - **Ask about pieces without a code** — on by default; "Don't ask again"
+    in the question turns it off.
   - **Equal main & interfacing** — *Bulk-fuse* (the default: `C2M C2I` is cut
     from the fused block) or *Cut separately*.
 - **Export**

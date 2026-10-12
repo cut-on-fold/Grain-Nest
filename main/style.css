@@ -2389,3 +2389,210 @@ body.dark-mode #bins svg * {
   box-sizing: border-box;
   padding: 1px 2px;
 }
+
+/* v1.10.0: Grain-Nest's own pop-up (utils/modal.ts) and nest-screen banner. */
+.gn-modal-back {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 15, 50, 0.35);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gn-modal {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 1.4em 1.6em 1.2em;
+  width: 30em;
+  max-width: calc(100vw - 4em);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  font-size: 0.95em;
+}
+.gn-modal h2 {
+  margin: 0 0 0.6em;
+  color: var(--heading);
+  font-size: 1.15em;
+}
+.gn-modal p {
+  margin: 0.4em 0;
+  line-height: 1.4;
+}
+.gn-modal ul {
+  margin: 0.4em 0;
+  padding-left: 1.2em;
+  max-height: 12em;
+  overflow-y: auto;
+}
+.gn-modal label.field {
+  display: block;
+  margin: 0.8em 0 0;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+.gn-modal label.field input,
+.gn-modal label.field select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.25em;
+  padding: 0.45em 0.6em;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  border-radius: 4px;
+  font-size: 1.05em;
+}
+.gn-modal label.tick {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 1em;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+.gn-modal .btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6em;
+  margin-top: 1.2em;
+}
+.gn-modal .btns button {
+  padding: 0.5em 1.3em;
+  border-radius: 5em;
+  font-size: 0.9em;
+  font-family: inherit;
+  cursor: default;
+}
+.gn-modal .btns button.pri {
+  background: var(--button-primary);
+  color: #fff;
+  border: 1px solid var(--button-primary);
+}
+.gn-modal .btns button.sec {
+  background: transparent;
+  color: var(--heading);
+  border: 1px solid var(--heading);
+}
+.gn-banner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 4.2em;
+  z-index: 50;
+  border-radius: 6px;
+  padding: 0.6em 1em;
+  font-size: 0.9em;
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  max-width: 56em;
+}
+.gn-banner.warn {
+  background: #fff4e0;
+  color: #6a3b00;
+  border: 1px solid #f0c27a;
+}
+.gn-banner.info {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.gn-banner a {
+  color: var(--accent-strong);
+  font-weight: bold;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.gn-banner a.close {
+  color: inherit;
+  font-weight: normal;
+  font-size: 1.2em;
+  opacity: 0.6;
+}
+
+/* v1.10.0: Saved layouts panel above the pieces (parts-view). */
+#layoutspanel {
+  flex: 0 0 auto;
+  min-height: 3em;
+  display: flex;
+  flex-direction: column;
+  background: var(--table-bg);
+}
+#layoutspanel .lp-head {
+  padding: 0.55em 0.9em;
+  background: var(--progress-bg);
+  color: var(--heading);
+  font-weight: bold;
+  font-size: 0.9em;
+}
+#layoutspanel .lp-list {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 0.3em 0;
+  font-size: 0.85em;
+}
+#layoutspanel .lp-folder {
+  padding: 0.35em 0.9em;
+  color: var(--heading);
+  font-weight: bold;
+  cursor: default;
+  user-select: none;
+}
+#layoutspanel .lp-folder .n {
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+#layoutspanel .lp-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.3em 0.9em 0.3em 1.8em;
+  color: var(--text-primary);
+}
+#layoutspanel .lp-row.unsaved {
+  padding-left: 0.9em;
+}
+#layoutspanel .lp-row.unsaved .name {
+  font-style: italic;
+}
+#layoutspanel .lp-row:hover {
+  background: var(--table-hover);
+}
+#layoutspanel .lp-row .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#layoutspanel .lp-row .meta {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+#layoutspanel .lp-row .acts a {
+  color: var(--link);
+  text-decoration: none;
+  margin-left: 0.7em;
+}
+#layoutspanel .lp-row .warn {
+  color: #b25e00;
+  margin-left: 0.3em;
+}
+#lp-divider {
+  flex: 0 0 7px;
+  cursor: row-resize;
+  background: var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#lp-divider::after {
+  content: "";
+  width: 3em;
+  height: 2px;
+  border-top: 1px solid var(--text-secondary);
+  border-bottom: 1px solid var(--text-secondary);
+  opacity: 0.6;
+}

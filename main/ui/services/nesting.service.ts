@@ -117,7 +117,15 @@ export class NestingService {
    * v1.9.0: called before a nest starts (pairs & folds from cut codes);
    * false cancels. `warn` is false on a restart from the nest screen.
    */
-  private prepareNestFn: ((warn: boolean) => boolean) | null = null;
+  private prepareNestFn:
+    | ((warn: boolean) => boolean | Promise<boolean>)
+    | null = null;
+
+  /**
+   * v1.10.0: asked before Back leaves the nest screen (save the layout?);
+   * false stays.
+   */
+  private beforeBackFn: (() => Promise<boolean>) | null = null;
 
   /** Flag indicating if nesting is being started */
   private isStarting = false;
@@ -148,7 +156,8 @@ export class NestingService {
     nestRactive?: RactiveInstance<NestViewData>;
     displayNestFn?: DisplayNestFunction;
     saveJsonFn?: SaveJsonFunction;
-    prepareNestFn?: (warn: boolean) => boolean;
+    prepareNestFn?: (warn: boolean) => boolean | Promise<boolean>;
+    beforeBackFn?: () => Promise<boolean>;
   }) {
     if (options) {
       this.fs = options.fs || null;
@@ -158,6 +167,7 @@ export class NestingService {
       this.displayNestFn = options.displayNestFn || null;
       this.saveJsonFn = options.saveJsonFn || null;
       this.prepareNestFn = options.prepareNestFn || null;
+      this.beforeBackFn = options.beforeBackFn || null;
     }
   }
 
@@ -446,7 +456,10 @@ export class NestingService {
    * @param progressCallback - Optional callback for progress updates
    * @returns True if nesting was started successfully
    */
-  startNesting(progressCallback?: ProgressCallback, restart = false): boolean {
+  async startNesting(
+    progressCallback?: ProgressCallback,
+    restart = false,
+  ): Promise<boolean> {
     if (!this.deepNest) {
       message("DeepNest instance not available", true);
       return false;
@@ -497,7 +510,7 @@ export class NestingService {
     }
 
     // v1.9.0: pairs & folds from cut codes (may ask first).
-    if (this.prepareNestFn && !this.prepareNestFn(!restart)) {
+    if (this.prepareNestFn && !(await this.prepareNestFn(!restart))) {
       return false;
     }
 
@@ -595,10 +608,49 @@ export class NestingService {
       // After a delay, switch to stop state and start nesting
       setTimeout(() => {
         this.updateStopButton("stop");
-        this.startNesting(undefined, true);
+        void this.startNesting(undefined, true);
       }, 1000);
     }
     // If disabled, do nothing
+  }
+
+  /** v1.10.0: Back, after asking about an unsaved layout. */
+  private async backClicked(): Promise<void> {
+    if (this.beforeBackFn && !(await this.beforeBackFn())) return;
+    this.goBack();
+  }
+
+  /**
+   * v1.10.0: shows a saved layout on the nest screen (no nest running),
+   * ready to export. `nest` is already in DeepNest.nests.
+   */
+  showLayout(nest: SelectableNestingResult): void {
+    if (this.backCleanup) {
+      clearTimeout(this.backCleanup.timer);
+      const run = this.backCleanup.run;
+      this.backCleanup = null;
+      run();
+    }
+    if (this.startLabelTimer) {
+      clearTimeout(this.startLabelTimer);
+      this.startLabelTimer = null;
+    }
+    this.switchToNestView();
+    const nestDisplay = document.querySelector(SELECTORS.NEST_DISPLAY);
+    if (nestDisplay) nestDisplay.innerHTML = "";
+    if (this.displayNestFn) this.displayNestFn(nest);
+    if (this.nestRactive) this.nestRactive.update("nests");
+    this.enableExportButton();
+    this.updateStopButton("start");
+  }
+
+  /** v1.10.0: clears the nest screen's drawing and list (before re-nesting). */
+  clearNests(): void {
+    if (!this.deepNest) return;
+    this.deepNest.nests.length = 0;
+    const nestDisplay = document.querySelector(SELECTORS.NEST_DISPLAY);
+    if (nestDisplay) nestDisplay.innerHTML = "";
+    if (this.nestRactive) this.nestRactive.update("nests");
   }
 
   /**
@@ -724,7 +776,7 @@ export class NestingService {
     // Bind start button
     const startButton = document.querySelector(SELECTORS.START_BUTTON);
     if (startButton) {
-      startButton.addEventListener("click", () => this.startNesting());
+      startButton.addEventListener("click", () => void this.startNesting());
     }
 
     // Bind stop/start toggle button
@@ -736,7 +788,7 @@ export class NestingService {
     // Bind back button
     const backButton = document.querySelector(SELECTORS.BACK_BUTTON);
     if (backButton) {
-      backButton.addEventListener("click", () => this.goBack());
+      backButton.addEventListener("click", () => void this.backClicked());
     }
   }
 

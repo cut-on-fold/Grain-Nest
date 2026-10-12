@@ -13,6 +13,8 @@ import type {
   NestViewData,
   NestingProgress,
   PartsViewData,
+  Part,
+  SelectableNestingResult,
 } from "./types/index.js";
 import { IPC_CHANNELS } from "./types/index.js";
 
@@ -59,8 +61,20 @@ import {
 
 // Utility imports
 import { message } from "./utils/ui-helpers.js";
-import { piecesPlaced, piecesToPlace } from "./utils/nest-rank.js";
+import { piecesPlaced, piecesToPlace, rankNests } from "./utils/nest-rank.js";
 import { applyAutoCuts, clearAutoCuts } from "./utils/auto-cuts.js";
+import {
+  escapeHtml,
+  hideNestBanner,
+  showModal,
+  showNestBanner,
+} from "./utils/modal.js";
+import {
+  layoutChanges,
+  layoutToNest,
+  type SavedLayout,
+} from "./utils/saved-layouts.js";
+import { LayoutsService } from "./services/layouts.service.js";
 import type { NestJob } from "./utils/nest-jobs.js";
 import { getElement, getElements } from "./utils/dom-utils.js";
 import {
@@ -194,6 +208,7 @@ let partsViewService: PartsViewService;
 let nestViewService: NestViewService;
 let sheetDialogService: SheetDialogService;
 let projectService: ProjectService;
+let layoutsService: LayoutsService;
 
 /**
  * Electron and Node.js module references
@@ -302,21 +317,37 @@ function updateForm(c: UIConfig): void {
   });
 }
 
-/** A list of piece names for a message, shortened past a dozen. */
-function pieceList(names: string[]): string {
-  const shown = names.slice(0, 12).map((n) => "• " + n);
+/** Piece names for a pop-up list, shortened past a dozen. */
+function pieceNames(names: string[]): string[] {
+  const shown = names.slice(0, 12);
   if (names.length > 12) shown.push(`…and ${names.length - 12} more`);
-  return shown.join("\n");
+  return shown;
 }
+
+/**
+ * v1.10.0: what's on the nest screen — the layout opened from the saved
+ * list (no "save it?" on Back), and the nest result last saved, so Back
+ * only asks about a layout that isn't saved.
+ */
+const nestState: {
+  opened: SavedLayout | null;
+  saved: SelectableNestingResult | null;
+} = { opened: null, saved: null };
 
 /**
  * v1.9.0: before a nest starts, work out the pairs and folds from the cut
  * codes (Settings: "Pairs & folds from cut codes"). Asks first when some
  * pieces have no code or can't be folded; returns false to cancel.
  * `warn` is false when restarting from the nest screen (already asked).
+ * v1.10.0: the no-code question has "Don't ask again" (Settings → Cut
+ * codes turns it back on); with it off, a banner on the nest screen
+ * names the pieces instead.
  */
-function prepareAutoCuts(warn: boolean): boolean {
+async function prepareAutoCuts(warn: boolean): Promise<boolean> {
   const dn = getDeepNest();
+  hideNestBanner();
+  nestState.opened = null;
+  nestState.saved = null;
   if (configService.getSync("autoCutsFromCodes") === false) {
     clearAutoCuts(dn);
     return true;
@@ -329,26 +360,187 @@ function prepareAutoCuts(warn: boolean): boolean {
   );
   // Folds made for OF codes show in the list ("Unfold").
   if (partsViewService) partsViewService.update();
-  if (!warn) return true;
-  const notes: string[] = [];
-  if (report.uncoded.length > 0) {
-    notes.push(
-      "These pieces have no cut code (like C2M or C1MOF) in their name, " +
-        "so they're cut as their Quantity says, none mirrored:\n" +
-        pieceList(report.uncoded),
+  const uncodedBanner = (): void => {
+    if (report.uncoded.length === 0) return;
+    showNestBanner(
+      `${report.uncoded.length === 1 ? "1 piece has" : `${report.uncoded.length} pieces have`} no cut code, so ${report.uncoded.length === 1 ? "it's" : "they're"} cut as the Quantity says: ` +
+        escapeHtml(pieceNames(report.uncoded).join(", ")),
+      [],
+      "info",
     );
+  };
+  if (!warn) return true;
+  if (report.uncoded.length > 0) {
+    if (configService.getSync("warnUncodedPieces") === false) {
+      // Shown once the nest screen is up.
+      setTimeout(uncodedBanner, 0);
+    } else {
+      const r = await showModal({
+        title: "Pieces without a cut code",
+        text: [
+          "These pieces have no cut code (like C2M or C1MOF) in their name, so they're cut as their Quantity says, none mirrored:",
+        ],
+        list: pieceNames(report.uncoded),
+        tickbox: "Don't ask again",
+        buttons: [
+          { id: "cancel", label: "Cancel" },
+          { id: "nest", label: "Nest anyway", primary: true },
+        ],
+      });
+      if (r.button !== "nest") {
+        clearAutoCuts(dn);
+        return false;
+      }
+      if (r.ticked) {
+        configService.setSync("warnUncodedPieces", false);
+        updateForm(configService.getSync() as unknown as UIConfig);
+      }
+    }
   }
   if (report.foldFailed.length > 0) {
-    notes.push(
-      "These pieces are cut on the fold (OF) but have no fold edge, so " +
-        "they're cut whole as drawn. Use Mark fold to show the fold:\n" +
-        pieceList(report.foldFailed),
-    );
+    const r = await showModal({
+      title: "Pieces without a fold edge",
+      text: [
+        "These pieces are cut on the fold (OF) but have no fold edge, so they're cut whole as drawn. Use Mark fold to show the fold.",
+      ],
+      list: pieceNames(report.foldFailed),
+      buttons: [
+        { id: "cancel", label: "Cancel" },
+        { id: "nest", label: "Nest anyway", primary: true },
+      ],
+    });
+    if (r.button !== "nest") {
+      clearAutoCuts(dn);
+      return false;
+    }
   }
-  if (notes.length === 0) return true;
-  if (window.confirm(notes.join("\n\n") + "\n\nNest anyway?")) return true;
-  clearAutoCuts(dn);
-  return false;
+  return true;
+}
+
+/** The nest shown on the nest screen (selected, else the top one). */
+function shownNest(): SelectableNestingResult | null {
+  const dn = getDeepNest();
+  return dn.nests.find((n) => n.selected) || rankNests(dn, dn.nests)[0] || null;
+}
+
+/**
+ * v1.10.0: before Back leaves the nest screen. An unsaved layout asks
+ * first (Save layout… / Leave / Cancel, "Don't ask again"), and is kept
+ * as "Last nest (not saved)" either way.
+ */
+async function beforeLeavingNest(): Promise<boolean> {
+  hideNestBanner();
+  const nest = shownNest();
+  if (!nest || nestState.opened || nest === nestState.saved) return true;
+  if (configService.getSync("askBeforeLeavingNest") !== false) {
+    const r = await showModal({
+      title: "Leave without saving?",
+      text: [
+        "This layout isn't saved. If you leave, it's kept as Last nest (not saved) until you run another nest.",
+      ],
+      tickbox: "Don't ask again",
+      buttons: [
+        { id: "cancel", label: "Cancel" },
+        { id: "leave", label: "Leave" },
+        { id: "save", label: "Save layout…", primary: true },
+      ],
+    });
+    if (r.button === "cancel") return false;
+    if (r.ticked) {
+      configService.setSync("askBeforeLeavingNest", false);
+      updateForm(configService.getSync() as unknown as UIConfig);
+    }
+    if (r.button === "save") {
+      const saved = await layoutsService.saveNest(nest);
+      if (!saved) return false;
+      nestState.saved = nest;
+      return true;
+    }
+  }
+  layoutsService.keepAsLastNest(nest);
+  return true;
+}
+
+/** v1.10.0: Save layout on the nest screen. */
+async function saveShownLayout(): Promise<void> {
+  const nest = shownNest();
+  if (!nest) {
+    message("There's no layout to save yet.");
+    return;
+  }
+  const saved = await layoutsService.saveNest(nest);
+  if (saved) {
+    nestState.saved = nest;
+    nestState.opened = null;
+    message(`Saved layout "${saved.name}".`);
+  }
+}
+
+/**
+ * v1.10.0: opens a saved layout on the nest screen: Nest for switches to
+ * its fabric, its pairs are made, and a banner says if pieces changed
+ * since it was saved.
+ */
+function openLayout(layout: SavedLayout): void {
+  const dn = getDeepNest();
+  const job = (layout.job || "all") as NestJob;
+  partsViewService.setNestJob(job);
+  if (configService.getSync("autoCutsFromCodes") === false) clearAutoCuts(dn);
+  else
+    applyAutoCuts(
+      dn,
+      job,
+      configService.getSync("equalCutsFuse") !== "separate",
+    );
+  // A mirrored copy the layout needs (made here when cut codes are off).
+  const copyOf = (part: Part): Part | undefined => {
+    const have = dn.parts.find((q) => q.autoCopy && q.autoCopyOf === part);
+    if (have) return have;
+    const idx = dn.mirrorCopyPart(dn.parts.indexOf(part));
+    if (idx < 0) return undefined;
+    const copy = dn.parts[idx];
+    copy.isMirrorCopy = false;
+    delete copy.mirrorOfId;
+    copy.autoCopy = true;
+    copy.autoCopyOf = part;
+    copy.nestQuantity = 0;
+    return copy;
+  };
+  const nest = layoutToNest(dn, layout, copyOf);
+  // Copies made just for this layout count as placed pieces.
+  for (const sg of nest.placements) {
+    for (const pl of sg.sheetplacements) {
+      const p = dn.parts[pl.source];
+      if (p && p.autoCopy && p.nestQuantity === 0) p.nestQuantity = undefined;
+    }
+  }
+  const changes = layoutChanges(dn, layout);
+  dn.nests.length = 0;
+  dn.nests.push(nest);
+  nestState.opened = layout;
+  nestState.saved = nest;
+  nestingService.showLayout(nest);
+  partsViewService.update();
+  layoutsService.markChanged(layout.id, changes.length > 0);
+  if (changes.length > 0) {
+    showNestBanner(
+      `⚠ Some pieces have changed since <b>${escapeHtml(layout.name)}</b> was saved: ` +
+        escapeHtml(pieceNames(changes).join("; ")) +
+        ". It's drawn with the pieces as they are now, so they may overlap or not fit.",
+      [
+        {
+          label: "Re-nest with the new pieces",
+          run: () => {
+            nestingService.clearNests();
+            void nestingService.startNesting(undefined, false);
+          },
+        },
+        { label: "Keep as saved", run: () => undefined },
+      ],
+    );
+  } else {
+    hideNestBanner();
+  }
 }
 
 /**
@@ -616,6 +808,14 @@ function initializeComponents(): void {
   });
   partsViewService.initialize();
 
+  // v1.10.0: saved layouts, listed above the pieces.
+  layoutsService = new LayoutsService(
+    getDeepNest(),
+    configService as unknown as ConfigObject,
+  );
+  layoutsService.onOpen = openLayout;
+  partsViewService.attachLayouts(layoutsService);
+
   // Initialize nest view
   nestViewService = createNestViewService({
     deepNest: getDeepNest(),
@@ -709,6 +909,7 @@ function initializeComponents(): void {
     displayNestFn: nestViewService.getDisplayNestCallback(),
     saveJsonFn: () => exportService.exportToJson(),
     prepareNestFn: prepareAutoCuts,
+    beforeBackFn: beforeLeavingNest,
   });
 
   // Set nestRactive separately to avoid type conflicts
@@ -756,6 +957,7 @@ function initializeComponents(): void {
       // project's nap flag said (ProjectService set deepNest.nap
       // during applyLoadData).
       syncNapCheckboxFromDeepNest();
+      partsViewService.refreshLayouts();
       resize();
     },
   });
@@ -890,6 +1092,7 @@ function initializeClearAllButton(): void {
     dn.parts.length = 0;
     dn.nests.length = 0;
     dn.nestJob = "all"; // phase-r8a: an empty workspace has no nest job
+    layoutsService.clear(); // v1.10.0
     // Refresh the parts table + import preview.
     const partsRactive = partsViewService.getRactive() as unknown as {
       update(keypath?: string): Promise<void>;
@@ -936,6 +1139,15 @@ function initializeExportButtons(): void {
         "Export it anyway?",
     );
   };
+
+  // v1.10.0: Save layout (nest screen).
+  const saveLayoutBtn = getElement<HTMLElement>("#savelayout");
+  if (saveLayoutBtn) {
+    saveLayoutBtn.onclick = () => {
+      void saveShownLayout();
+      return false;
+    };
+  }
 
   // SVG export
   const exportSvgBtn = getElement<HTMLElement>("#exportsvg");

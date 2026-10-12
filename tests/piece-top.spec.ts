@@ -12,7 +12,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
-import { setCutCodes } from "./helpers/cut-codes";
+import { setAskBeforeLeaving, setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -48,6 +48,8 @@ test("Flip top sets which end of a piece leads in the nest", async ({}, testInfo
   const mainWindow = await electronApp.firstWindow();
   // Written for Quantity and Mirror copy by hand (v1.9.0).
   await setCutCodes(mainWindow, false);
+  // Goes Back without saving layouts (v1.10.0).
+  await setAskBeforeLeaving(mainWindow, false);
 
   const svg = path.resolve(__dirname, "assets", "synthetic-top.svg");
   await electronApp.evaluate(({ dialog }, p) => {
@@ -219,6 +221,8 @@ test("Flip top sets which end of a piece leads in the nest", async ({}, testInfo
   }
 
   await setCutCodes(mainWindow, true);
+
+  await setAskBeforeLeaving(mainWindow, true);
 
   await electronApp.close();
 });

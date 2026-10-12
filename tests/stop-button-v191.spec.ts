@@ -4,7 +4,7 @@
 // the new nest. Run locally with CI=1.
 
 import { _electron as electron, expect, test } from "@playwright/test";
-import { setCutCodes } from "./helpers/cut-codes";
+import { setAskBeforeLeaving, setCutCodes } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import path from "path";
 
@@ -15,6 +15,8 @@ test("Start after Stop and Back shows Stop and keeps nesting", async () => {
   });
   const mainWindow = await electronApp.firstWindow();
   await setCutCodes(mainWindow, true);
+  // Goes Back without saving layouts (v1.10.0).
+  await setAskBeforeLeaving(mainWindow, false);
   const pattern = path.resolve(
     __dirname,
     "..",
@@ -97,5 +99,6 @@ test("Start after Stop and Back shows Stop and keeps nesting", async () => {
   // One click stops it.
   await stop.click();
   await expect(stop).toHaveClass("button stop disabled");
+  await setAskBeforeLeaving(mainWindow, true);
   await electronApp.close();
 });

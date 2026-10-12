@@ -62,6 +62,10 @@ export interface UIConfig extends DeepNestConfig {
   autoCutsFromCodes?: boolean;
   /** v1.9.0: equal main & interfacing counts: "fuse" or "separate". */
   equalCutsFuse?: "fuse" | "separate";
+  /** v1.10.0: ask before nesting pieces without a cut code. */
+  warnUncodedPieces?: boolean;
+  /** v1.10.0: ask before leaving the nest screen with an unsaved layout. */
+  askBeforeLeavingNest?: boolean;
   /** v1.3.0: saved-settings migration level (see ConfigService). */
   settingsRevision?: number;
 }

@@ -24,6 +24,15 @@ import type {
 import type { Part, NestingResult } from "../../../index.d.ts";
 import { message } from "../utils/ui-helpers.js";
 import { inFolder, patternSource } from "../utils/file-names.js";
+import {
+  lastNestOf,
+  layoutForFile,
+  layoutFromFile,
+  layoutsOf,
+  pieceId,
+  setLastNest,
+  type SavedLayoutFile,
+} from "../utils/saved-layouts.js";
 
 /**
  * File system interface — minimal slice this service needs. Matches
@@ -144,6 +153,10 @@ interface ProjectFileV1 {
    * "horizontal" when absent (which matches brief §3.3).
    */
   warpDirection?: "horizontal" | "vertical";
+  /** v1.10.0: saved layouts; pieces are positions in `parts`. */
+  layouts?: SavedLayoutFile[];
+  /** v1.10.0: the best layout of the last nest, not saved by name. */
+  lastNest?: SavedLayoutFile;
 }
 
 const PROJECT_FILE_FILTERS: FileFilter[] = [
@@ -448,12 +461,28 @@ export class ProjectService {
       };
     });
 
+    // v1.10.0: layouts refer to pieces by session id; in the file, by
+    // their position in `parts`.
+    const savedIndexOfPid = new Map<number, number>();
+    toSave.forEach((p, i) => savedIndexOfPid.set(pieceId(this.deepNest, p), i));
+    const layouts = layoutsOf(this.deepNest)
+      .map((l) => layoutForFile(l, savedIndexOfPid))
+      .filter((l): l is SavedLayoutFile => !!l);
+    const last = lastNestOf(this.deepNest);
+    const lastNest = last
+      ? (layoutForFile(last, savedIndexOfPid) ?? undefined)
+      : undefined;
+
     return {
       grainnestProject: 1,
       savedAt: new Date().toISOString(),
       imports,
       parts,
-      nests: this.deepNest.nests as unknown as NestingResult[],
+      // v1.10.0: nest results aren't kept any more (their piece numbers
+      // went stale, e.g. the copies made for pairs); saved layouts are.
+      nests: [],
+      layouts,
+      lastNest,
       nap: !!this.deepNest.nap,
       fabricType: this.deepNest.fabricType === "knit" ? "knit" : undefined,
       nestJob: this.deepNest.nestJob,
@@ -665,18 +694,32 @@ export class ProjectService {
       this.applyOverrides(this.deepNest.parts[memIdx], sp);
     }
 
+    // v1.10.0: the part each saved position became (before reordering).
+    const partAtSaved = savedToMem.map((m) =>
+      m >= 0 ? this.deepNest.parts[m] : undefined,
+    );
+
     // Reorder deepNest.parts so its order matches the saved order
     // exactly. Without this, mirror-copy entries (which append) get
     // placed at the end rather than where the saved file had them.
     this.reorderPartsToSavedOrder(savedToMem);
 
-    // Restore nests as-is. `source` indices on placements point into
-    // the saved-order parts array, which now equals deepNest.parts
-    // order. Nest-view will render them on its next update.
+    // v1.10.0: nest results from older files aren't restored (nothing
+    // showed them, and their piece numbers can be stale); saved layouts
+    // are.
     this.deepNest.nests.length = 0;
-    for (const n of data.nests) {
-      (this.deepNest.nests as unknown as NestingResult[]).push(n);
+    const layouts = layoutsOf(this.deepNest);
+    layouts.length = 0;
+    for (const lf of data.layouts || []) {
+      const l = layoutFromFile(this.deepNest, lf, (i) => partAtSaved[i]);
+      if (l) layouts.push(l);
     }
+    setLastNest(
+      this.deepNest,
+      data.lastNest
+        ? layoutFromFile(this.deepNest, data.lastNest, (i) => partAtSaved[i])
+        : null,
+    );
 
     if (this.deepNest.imports.length > 0) {
       this.deepNest.imports[this.deepNest.imports.length - 1].selected = true;
@@ -736,6 +779,8 @@ export class ProjectService {
     this.deepNest.imports.length = 0;
     this.deepNest.parts.length = 0;
     this.deepNest.nests.length = 0;
+    layoutsOf(this.deepNest).length = 0;
+    setLastNest(this.deepNest, null);
     if (this.partsRactive) {
       this.partsRactive.update("imports");
       this.partsRactive.update("parts");
