@@ -122,6 +122,18 @@ export class NestingService {
   /** Flag indicating if nesting is being started */
   private isStarting = false;
 
+  /**
+   * v1.9.1: the delayed button relabel after Stop, and the delayed clean-up
+   * after Back. Both are cancelled (or run at once) when a new nest
+   * starts, so a late timer can't relabel the button "Start" or stop the
+   * new nest.
+   */
+  private startLabelTimer: ReturnType<typeof setTimeout> | null = null;
+  private backCleanup: {
+    timer: ReturnType<typeof setTimeout>;
+    run: () => void;
+  } | null = null;
+
   /** Flag indicating if nesting is being stopped */
   private isStopping = false;
 
@@ -471,6 +483,19 @@ export class NestingService {
       return false;
     }
 
+    // v1.9.1: finish any clean-up from Back now (not after this nest has
+    // started) and drop a pending "Start" relabel from the last Stop.
+    if (this.backCleanup) {
+      clearTimeout(this.backCleanup.timer);
+      const run = this.backCleanup.run;
+      this.backCleanup = null;
+      run();
+    }
+    if (this.startLabelTimer) {
+      clearTimeout(this.startLabelTimer);
+      this.startLabelTimer = null;
+    }
+
     // v1.9.0: pairs & folds from cut codes (may ask first).
     if (this.prepareNestFn && !this.prepareNestFn(!restart)) {
       return false;
@@ -490,6 +515,9 @@ export class NestingService {
 
       // Start the nesting process
       this.deepNest.start(progressCallback || null, displayCallback);
+
+      // v1.9.1: the button says Stop while a nest runs.
+      this.updateStopButton("stop");
 
       return true;
     } finally {
@@ -533,7 +561,9 @@ export class NestingService {
       }
 
       // After a delay, switch button to start state
-      setTimeout(() => {
+      if (this.startLabelTimer) clearTimeout(this.startLabelTimer);
+      this.startLabelTimer = setTimeout(() => {
+        this.startLabelTimer = null;
         this.updateStopButton("start");
       }, 3000);
 
@@ -579,8 +609,14 @@ export class NestingService {
     // Switch to main view immediately
     this.switchToMainView();
 
+    // The "Start" relabel from a recent Stop no longer applies.
+    if (this.startLabelTimer) {
+      clearTimeout(this.startLabelTimer);
+      this.startLabelTimer = null;
+    }
+
     // Perform cleanup after a delay to allow for animation
-    setTimeout(() => {
+    const run = (): void => {
       // Stop nesting if it's running
       if (this.isWorking()) {
         if (this.ipcRenderer) {
@@ -620,7 +656,15 @@ export class NestingService {
 
       // Disable export button
       this.disableExportButton();
-    }, 2000);
+    };
+    if (this.backCleanup) clearTimeout(this.backCleanup.timer);
+    this.backCleanup = {
+      timer: setTimeout(() => {
+        this.backCleanup = null;
+        run();
+      }, 2000),
+      run,
+    };
   }
 
   /**
