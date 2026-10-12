@@ -618,6 +618,11 @@ sideways underneath it.
   go.
 - **Select all** at the bottom left selects every visible row (and changes to
   **Deselect all**).
+- Select all only ever selects **what's showing**: with **Hide excluded** on,
+  the unticked pieces are left out, and with a [view](#views) picked, only that
+  view's pieces are selected. So **Apply to selected** and **Delete** never
+  touch pieces you can't see. Handy for, say, setting the seam allowance on
+  just the lining pieces: pick Nest for: Lining, Hide excluded, Select all.
 
 ### Sorting
 
@@ -728,8 +733,8 @@ pieces it fits (*10/10*), with:
   made again.
 - **Rename** and **Delete** — deleting a layout doesn't change your pieces.
 
-Drag the bar between the panel and your pieces to share the space. The panel
-only appears once there's a layout in it.
+Drag the bar between the panel and your pieces to share the space. Before
+you've saved anything the panel says *No saved layouts yet*.
 
 **Last nest (not saved)** at the top is the best layout from your most recent
 nest that you didn't save. Click **Save** to keep it under a name. It's
@@ -772,9 +777,9 @@ can be in several views; sheets are always shown.
 
 ### The View menu
 
-Once there's a view, a **View** menu appears at the top of the Saved layouts
-panel: **All pieces** and each view, with how many pieces it has. Pick one to
-show it. **Nest for** still picks the fabric within the view (e.g. View B,
+The **View** menu is at the top of the Saved layouts panel: **All pieces**
+and each view, with how many pieces it has. Pick one to show it. Until you
+make a view it just has All pieces. **Nest for** still picks the fabric within the view (e.g. View B,
 Lining).
 
 With a view picked, the same menu has **Rename this view…** and **Delete this

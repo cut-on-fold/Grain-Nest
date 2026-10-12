@@ -178,9 +178,12 @@ test("Views: save, show, nest, layouts, import, reload, delete", async () => {
   await viewSelect.selectOption("__delete");
   await expect(modal).toContainText("Its 1 saved layout is deleted too");
   await modal.locator("button[data-id=delete]").click();
-  await expect(page.locator("#viewselect")).toHaveCount(0);
+  // v1.11.1: the menu stays, back on All pieces.
+  await expect(viewSelect.locator("option:checked")).toHaveText(
+    "All pieces (22)",
+  );
   await expect(rows).toHaveCount(23);
-  await expect(page.locator("#layoutspanel")).toHaveCount(0);
+  await expect(page.locator("#layoutspanel")).toContainText("No views yet");
 
   await setAskBeforeLeaving(page, true);
   await electronApp.close();

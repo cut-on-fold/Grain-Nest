@@ -234,11 +234,10 @@
 
           	<!-- v1.10.0: saved layouts (services/layouts.service.ts), above the
           	     pieces, with a divider to share the space. -->
-          	{{#if layoutsData.any}}
+          	<!-- v1.11.1: always shown, so the View menu is easy to find. -->
           	<div id="layoutspanel" style="height: {{layoutsHeight}}px">
           		<div class="lp-head"><span>Saved layouts</span>
-          			{{#if viewsData.list.length}}
-          			<!-- v1.11.0: views (services/views.service.ts) -->
+          			<!-- v1.11.0: views (services/views.service.ts); v1.11.1: always shown -->
           			<label class="lp-view">View
           				<select id="viewselect" on-change="viewchange" title="Show and nest only the pieces of one view">
           					<option value="" selected="{{ !viewsData.current }}">All pieces ({{viewsData.all}})</option>
@@ -250,10 +249,10 @@
           					{{/if}}
           				</select>
           			</label>
-          			{{/if}}
           		</div>
           		<div class="lp-list">
           			{{#if !layoutsData.shown}}<div class="lp-empty">No saved layouts{{#if viewsData.current}} in this view{{/if}} yet. Nest, then click Save layout.</div>{{/if}}
+          			{{#if !viewsData.list.length}}<div class="lp-empty">No views yet. To make one, select pieces and click Save as view… below the list.</div>{{/if}}
           			{{#with layoutsData.last}}
           			<div class="lp-row unsaved" title="The best layout from your last nest. Save it to keep it.">
           				<span class="name">{{name}}</span><span class="meta">{{meta}}</span>
@@ -272,7 +271,6 @@
           		</div>
           	</div>
           	<div id="lp-divider" title="Drag to share the space between saved layouts and pieces"></div>
-          	{{/if}}
 
           	<div id="partscroll">
           		<table id="partslist">

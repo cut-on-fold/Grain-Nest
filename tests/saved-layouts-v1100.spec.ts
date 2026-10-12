@@ -91,7 +91,10 @@ test("Save, leave, reopen and reload saved layouts", async () => {
     s.fabric = "main";
     s.name = "Navy twill";
   });
-  await expect(page.locator("#layoutspanel")).toHaveCount(0);
+  // v1.11.1: the panel is always there, empty to start with.
+  await expect(page.locator("#layoutspanel .lp-empty").first()).toContainText(
+    "No saved layouts yet",
+  );
 
   // Nest, Save layout: the name is the sheet's name and width.
   await nestFor(page);

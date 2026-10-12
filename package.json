@@ -1,6 +1,6 @@
 {
   "name": "grain-nest",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "Pattern nesting for dressmaking — fork of deepnest-next adding grain-direction constraints",
   "private": true,
   "main": "main.js",

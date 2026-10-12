@@ -748,9 +748,9 @@ export class PartsViewService {
   refreshLayouts(): void {
     if (!this.ractive || !this.layouts) return;
     const { last, folders } = this.layouts.folders();
-    const hasViews = !!this.views && this.views.hasViews();
     this.ractive.set("layoutsData", {
-      any: this.layouts.hasAny() || hasViews,
+      // v1.11.1: the panel always shows.
+      any: true,
       shown: this.layouts.hasShown(),
       last,
       folders,
