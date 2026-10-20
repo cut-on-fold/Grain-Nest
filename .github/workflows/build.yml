@@ -53,8 +53,11 @@ jobs:
           hdiutil create -volname "Grain-Nest ${VERSION}" -srcfolder dmg -ov -format UDZO "$DMG"
           echo "DMG=$DMG" >> "$GITHUB_ENV"
 
+      # build_release.yml picks this up in the same run; a manual build can be
+      # downloaded from the run's summary for a couple of days. Longer than that
+      # and a 100 MB disk image eats the account's Actions storage.
       - uses: actions/upload-artifact@v4
         with:
           name: grain-nest-macos-arm64
           path: ${{ env.DMG }}
-          retention-days: 14
+          retention-days: 2
