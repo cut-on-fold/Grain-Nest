@@ -1,0 +1,31 @@
+name: Tidy artifacts
+
+# Deletes every stored artifact (test screenshots and reports, old builds), to
+# free the account's Actions storage. Run it by hand from the Actions tab:
+# Tidy artifacts → Run workflow. Nothing in the repository is touched.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            let deleted = 0;
+            let bytes = 0;
+            for await (const page of github.paginate.iterator(github.rest.actions.listArtifactsForRepo, { owner, repo, per_page: 100 })) {
+              for (const a of page.data) {
+                await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: a.id });
+                deleted++;
+                bytes += a.size_in_bytes;
+              }
+            }
+            core.summary.addRaw(`Deleted ${deleted} artifacts, ${(bytes / 1024 / 1024).toFixed(1)} MB.`).write();
+            console.log(`Deleted ${deleted} artifacts, ${(bytes / 1024 / 1024).toFixed(1)} MB.`);
