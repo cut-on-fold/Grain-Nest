@@ -1,0 +1,9 @@
+{
+  "format": "grain-nest-sheets",
+  "version": 1,
+  "sheets": [
+    { "name": "Navy twill", "fabric": "main", "widthMm": 1500, "lengthMm": 3000 },
+    { "name": "Cotton lawn", "fabric": "lining", "widthMm": 1120, "lengthMm": 1500 },
+    { "name": "Woven fusible", "fabric": "interfacing", "widthMm": 900, "lengthMm": 1000 }
+  ]
+}

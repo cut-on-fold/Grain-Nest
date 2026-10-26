@@ -13,6 +13,12 @@ name: build
 # (build_release.yml calls it). Every change is still checked automatically
 # on Linux by playwright.yml, which compiles the code and runs the app's
 # tests.
+#
+# v1.12.0: with the Developer ID secrets (CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID,
+# APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID) the app is
+# signed and notarised by scripts/package-mac.mjs, which then asks Gatekeeper
+# whether it accepts it. Without them it's signed ad hoc as before
+# (right-click → Open the first time).
 
 on:
   workflow_dispatch:
@@ -21,7 +27,7 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest # Apple Silicon (arm64)
-    timeout-minutes: 30
+    timeout-minutes: 60 # notarising usually takes minutes, now and then much longer
     steps:
       - uses: actions/checkout@v4
 
@@ -37,8 +43,24 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Package Grain-Nest.app
-        run: npm run dist
+      - name: Package Grain-Nest.app, and sign it if the Developer ID secrets are there
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # which secrets this run can see, by length only (never their contents)
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            value=$(printenv "$name" || true)
+            if [ -n "$value" ]; then echo "$name: set (${#value} characters)"; else echo "$name: not set"; fi
+          done
+          # a secret that's missing arrives empty: unset it
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            [ -n "$(printenv "$name" || true)" ] || unset "$name"
+          done
+          npm run dist
 
       - name: Make the disk image (.dmg)
         # The window shows Grain-Nest.app and an Applications shortcut to

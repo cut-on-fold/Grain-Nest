@@ -32,6 +32,8 @@ jobs:
     # which needs it).
     if: github.repository == 'cut-on-fold/Grain-Nest'
     uses: ./.github/workflows/build.yml
+    # v1.12.0: the Developer ID secrets, for signing and notarising.
+    secrets: inherit
 
   attach-to-release:
     needs: build

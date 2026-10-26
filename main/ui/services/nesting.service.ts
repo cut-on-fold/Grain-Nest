@@ -619,8 +619,26 @@ export class NestingService {
 
   /** v1.10.0: Back, after asking about an unsaved layout. */
   private async backClicked(): Promise<void> {
-    if (this.beforeBackFn && !(await this.beforeBackFn())) return;
+    await this.leaveNestScreen();
+  }
+
+  /**
+   * v1.12.0: whether the nest screen is showing (a file the Mac sends then
+   * goes Back first).
+   */
+  isNestScreenShown(): boolean {
+    const nest = document.querySelector<HTMLElement>(SELECTORS.NEST_VIEW);
+    return !!nest && nest.classList.contains("active");
+  }
+
+  /**
+   * Back, as the button does: asks about an unsaved layout first. False
+   * when that's cancelled.
+   */
+  async leaveNestScreen(): Promise<boolean> {
+    if (this.beforeBackFn && !(await this.beforeBackFn())) return false;
     this.goBack();
+    return true;
   }
 
   /**

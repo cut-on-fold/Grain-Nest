@@ -28,6 +28,7 @@ This guide is for version 1.5.0 on a Mac with Apple Silicon.
 - [What's in the exported SVG](#whats-in-the-exported-svg)
 - [Exporting a cut list](#exporting-a-cut-list)
 - [Saving and reopening a project](#saving-and-reopening-a-project)
+- [Opening files from Finder and other apps](#opening-files-from-finder-and-other-apps)
 - [Settings](#settings)
 - [Other handy bits](#other-handy-bits)
 - [Example files](#example-files)
@@ -36,12 +37,12 @@ This guide is for version 1.5.0 on a Mac with Apple Silicon.
 
 ## Opening the Mac app the first time
 
-`Grain-Nest.app` (the disk image attached to each release on GitHub) is
-**unsigned** — it hasn't been registered with Apple, because that costs
-a yearly fee and this is a personal-use app. So the first time you open
-it, macOS will say it can't check the app for malicious software and
-won't open it on a plain double-click. You only have to get past this
-once; after that it opens normally.
+From v1.12.0 a release can be **signed and notarised** by Apple: it opens on
+a plain double-click, and only step 1 below applies. An **unsigned** release
+(every one before v1.12.0) hasn't been registered with Apple, so the first
+time you open it macOS says it can't check the app for malicious software
+and won't open it on a double-click. You only have to get past this once;
+after that it opens normally.
 
 1. Download the **.dmg** from the release and double-click it. A window
    opens showing **Grain-Nest** next to an **Applications** folder: drag
@@ -908,6 +909,50 @@ update by itself.
 Not saved: which preview tab was open, the zoom, and the list of results on
 the nest screen (save the ones you want with **Save layout**).
 
+## Opening files from Finder and other apps
+
+Grain-Nest opens files the Mac hands it, as well as through its own buttons:
+double-click a project, choose **Open With → Grain-Nest** on a file in
+Finder, or drop a file on Grain-Nest's icon in the Dock. Another app can send
+files the same way.
+
+- **A project (`.gnp`)** opens as **Open project** does. Double-clicking one
+  opens Grain-Nest.
+- **An SVG pattern** imports as **Import** does, with the same question about
+  adding the pieces to the view shown. Grain-Nest doesn't become the app SVGs
+  open in; it's in their **Open With** list.
+- **A sheets file (`.gnsheets`)** adds its sheets of fabric to what's open, and
+  shows what it added. Double-clicking one opens Grain-Nest.
+
+If the nest screen is showing, Grain-Nest goes Back first (asking about an
+unsaved layout, as Back does). If you choose Cancel there, the file isn't
+opened.
+
+### The sheets file
+
+A sheets file is a small text file (JSON) listing sheets of fabric, so that
+another app, or you, can hand Grain-Nest the fabric you have:
+
+```json
+{
+  "format": "grain-nest-sheets",
+  "version": 1,
+  "sheets": [
+    { "name": "Navy twill", "fabric": "main", "widthMm": 1500, "lengthMm": 3000 }
+  ]
+}
+```
+
+- `widthMm` is the width selvedge to selvedge and `lengthMm` the length along
+  the grain, both in millimetres. A sheet without both is left out.
+- `fabric` is one of `main`, `fused`, `interfacing`, `lining` or `ribbing` (the
+  Fabric choices on a sheet), or `""` for none. A fabric Grain-Nest doesn't know
+  becomes none, and it says so.
+- `name` is optional.
+- Anything else in the file is ignored, so an app can keep its own notes in it.
+
+[example-sheets.gnsheets](../examples/example-sheets.gnsheets) is an example.
+
 ## Settings
 
 Click the **gear** icon on the left. **set all to default** at the bottom puts
@@ -964,7 +1009,7 @@ everything back.
 
 ## Example files
 
-Two example files come with Grain-Nest:
+Three example files come with Grain-Nest:
 
 - [example-pattern.svg](../examples/example-pattern.svg) — a made-up dress
   pattern set out the recommended way: one **Pieces** layer, and a group per
@@ -977,6 +1022,10 @@ Two example files come with Grain-Nest:
   150 cm × 3 m sheet: the OF pieces cut on the fold, and the C2 pieces with
   mirror copies. It shows the layers and groups described in
   [What's in the exported SVG](#whats-in-the-exported-svg).
+- [example-sheets.gnsheets](../examples/example-sheets.gnsheets) — three sheets
+  of fabric (main, lining and interfacing) in a
+  [sheets file](#the-sheets-file). Double-click it, or open it with Grain-Nest,
+  to add them.
 
 ## Common things that go wrong
 

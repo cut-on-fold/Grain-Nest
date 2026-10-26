@@ -29,6 +29,9 @@ It's a Mac app (Apple Silicon), built on the open-source
   calibration square, ready for projector cutting (e.g. Pattern
   Projector). There's a cut list too.
 - **Projects.** Save and reopen everything as a `.gnp` file.
+- **Files from Finder and other apps.** Double-click a project, open an SVG
+  with Grain-Nest, or hand it a sheets file (`.gnsheets`) listing your
+  fabric, and it opens them.
 
 There's a full walkthrough in [docs/USAGE.md](docs/USAGE.md), and an
 example pattern with its exported nest in [examples/](examples/).
@@ -37,9 +40,10 @@ example pattern with its exported nest in [examples/](examples/).
 
 Download `grain-nest-v<version>-macos-arm64.dmg` from the latest
 [release](https://github.com/cut-on-fold/Grain-Nest/releases/latest), open it
-and drag **Grain-Nest** onto **Applications**. The app isn't signed by
-Apple, so the first time macOS may refuse to open it: right-click the app
-→ **Open**, or **System Settings → Privacy & Security → Open Anyway**.
+and drag **Grain-Nest** onto **Applications**. From v1.12.0 a release can
+be signed and notarised by Apple, and opens on a double-click. If yours
+isn't, the first time macOS may refuse to open it: right-click the app →
+**Open**, or **System Settings → Privacy & Security → Open Anyway**.
 
 When a new version comes out, Grain-Nest says so when it starts.
 

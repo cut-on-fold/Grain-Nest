@@ -64,6 +64,29 @@ let notificationWindow = null;
 var backgroundWindows = [];
 const notificationService = new NotificationService();
 
+// v1.12.0: files the Mac sends Grain-Nest (double-click, Open With, dropping
+// on the Dock icon, `open -a Grain-Nest file`). They can arrive before the
+// window has loaded, even before "ready" when they start the app, so they
+// wait here until the page says it's listening.
+let pendingOpenFiles = [];
+let openFilesReady = false;
+function sendOpenFiles() {
+  if (!mainWindow || !openFilesReady || pendingOpenFiles.length === 0) return;
+  mainWindow.webContents.send("open-files", pendingOpenFiles);
+  pendingOpenFiles = [];
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+}
+app.on("open-file", (event, filePath) => {
+  event.preventDefault();
+  pendingOpenFiles.push(filePath);
+  sendOpenFiles();
+});
+ipcMain.on("open-files-ready", () => {
+  openFilesReady = true;
+  sendOpenFiles();
+});
+
 // single instance
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -85,6 +108,7 @@ if (!gotTheLock) {
 }
 
 function createMainWindow() {
+  openFilesReady = false;
   // Create the browser window.
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 

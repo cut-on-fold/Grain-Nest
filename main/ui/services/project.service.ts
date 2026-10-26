@@ -251,7 +251,15 @@ export class ProjectService {
       properties: ["openFile"],
     });
     if (!paths || paths.length === 0) return false;
+    return this.loadProjectFile(paths[0]);
+  }
 
+  /**
+   * Restores a project file (Open project…, or v1.12.0 a .gnp the Mac
+   * sends, e.g. by double-clicking it). Returns true on success.
+   */
+  loadProjectFile(filePath: string): boolean {
+    const paths = [filePath];
     try {
       const raw = this.fs.readFileSync(paths[0], "utf8");
       const data = JSON.parse(raw) as ProjectFileV1;

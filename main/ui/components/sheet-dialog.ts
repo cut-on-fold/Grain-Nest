@@ -287,6 +287,40 @@ export class SheetDialogService {
   }
 
   /**
+   * v1.12.0: adds sheets given in mm (from a sheets file): width selvedge
+   * to selvedge, length along the grain. Returns how many were added.
+   */
+  addSheetsMm(
+    sheets: {
+      name: string;
+      fabric: string;
+      widthMm: number;
+      lengthMm: number;
+    }[],
+  ): number {
+    const units = this.config.getSync("units");
+    const toUser = (mm: number): number =>
+      units === "mm" ? mm : mm / INCHES_TO_MM;
+    // As the Add a sheet pop-up: with the warp horizontal the length runs
+    // across (the sheet's width in the drawing) and the bolt width up it.
+    const warpDir =
+      (this.deepNest as unknown as { warpDirection?: string }).warpDirection ??
+      "horizontal";
+    let added = 0;
+    for (const s of sheets) {
+      const across = warpDir === "vertical" ? s.widthMm : s.lengthMm;
+      const up = warpDir === "vertical" ? s.lengthMm : s.widthMm;
+      if (this.addSheet(toUser(across), toUser(up), s.name, s.fabric)) added++;
+    }
+    if (added > 0) {
+      if (this.ractive) this.ractive.update("parts");
+      if (this.updatePartsCallback) this.updatePartsCallback();
+      if (this.resizeCallback) this.resizeCallback();
+    }
+    return added;
+  }
+
+  /**
    * Handle the confirm button click
    * Validates inputs, creates the sheet, and updates the UI
    * @returns False to prevent default behavior, undefined otherwise

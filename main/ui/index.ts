@@ -78,6 +78,7 @@ import { LayoutsService } from "./services/layouts.service.js";
 import { ViewsService } from "./services/views.service.js";
 import { clearViews, refreshViewFlags, setCurrentView } from "./utils/views.js";
 import type { NestJob } from "./utils/nest-jobs.js";
+import { describeSheet, parseSheetsFile } from "./utils/sheets-file.js";
 import { getElement, getElements } from "./utils/dom-utils.js";
 import {
   setupPartsColumnResize,
@@ -991,28 +992,128 @@ function initializeImportButton(): void {
       ) {
         return false;
       }
-
-      importButton.className = "button import disabled";
-
-      try {
-        importButton.className = "button import spinner";
-        // v1.11.0: with a view shown, ask whether the new pieces join it.
-        const dn = getDeepNest();
-        const before = dn.parts.length;
-        const importsBefore = dn.imports.length;
-        await importService.showImportDialog();
-        const names = dn.imports
-          .slice(importsBefore)
-          .map((im) => im.filename)
-          .join(", ");
-        await viewsService.afterImport(dn.parts.slice(before), names);
-      } finally {
-        importButton.className = "button import";
-      }
-
+      await importPatterns(() => importService.showImportDialog());
       return false;
     };
   }
+}
+
+/**
+ * Imports patterns (the Import button, or v1.12.0 SVGs the Mac sends) with
+ * the button showing it's busy. v1.11.0: with a view shown, asks whether
+ * the new pieces join it.
+ */
+async function importPatterns(load: () => Promise<void>): Promise<void> {
+  const importButton = getElement<HTMLElement>("#import");
+  if (importButton) importButton.className = "button import spinner";
+  try {
+    const dn = getDeepNest();
+    const before = dn.parts.length;
+    const importsBefore = dn.imports.length;
+    await load();
+    const names = dn.imports
+      .slice(importsBefore)
+      .map((im) => im.filename)
+      .join(", ");
+    await viewsService.afterImport(dn.parts.slice(before), names);
+  } finally {
+    if (importButton) importButton.className = "button import";
+  }
+}
+
+/**
+ * v1.12.0: files the Mac sends Grain-Nest (double-click, Open With,
+ * dropping on the Dock icon): a project (.gnp) opens as Open project does,
+ * a sheets file (.gnsheets) adds its sheets, SVG patterns import as Import
+ * does. On the nest screen it goes Back first (asking about an unsaved
+ * layout). Batches are handled one after another.
+ */
+let openFilesQueue: Promise<void> = Promise.resolve();
+
+function initializeOpenFiles(): void {
+  ipcRenderer.on("open-files", (_event: unknown, ...args: unknown[]) => {
+    const paths = (Array.isArray(args[0]) ? args[0] : []) as string[];
+    openFilesQueue = openFilesQueue
+      .then(() => openFiles(paths))
+      .catch((e) => {
+        console.error("[grainnest] open files", e);
+        message(`Couldn't open the file: ${(e as Error).message}`, true);
+      });
+  });
+  ipcRenderer.send("open-files-ready");
+}
+
+async function openFiles(paths: string[]): Promise<void> {
+  const ext = (p: string) => path.extname(p).toLowerCase();
+  const projects = paths.filter((p) => ext(p) === ".gnp");
+  const sheets = paths.filter((p) => ext(p) === ".gnsheets");
+  const svgs = paths.filter((p) => ext(p) === ".svg");
+  const other = paths.filter(
+    (p) => ![".gnp", ".gnsheets", ".svg"].includes(ext(p)),
+  );
+  if (other.length > 0) {
+    message(
+      `Grain-Nest opens SVG patterns, projects (.gnp) and sheets files (.gnsheets) — ${other
+        .map((p) => `"${path.basename(p)}"`)
+        .join(", ")} wasn't opened.`,
+      true,
+    );
+  }
+  if (projects.length + sheets.length + svgs.length === 0) return;
+  if (nestingService.isNestScreenShown()) {
+    if (!(await nestingService.leaveNestScreen())) return;
+  }
+  // A project replaces what's open, so it goes first; one at a time.
+  if (projects.length > 0) {
+    projectService.loadProjectFile(projects[projects.length - 1]);
+    if (projects.length > 1) {
+      message(
+        `Opened ${path.basename(projects[projects.length - 1])}; a project at a time, so the other ${projects.length - 1} weren't opened.`,
+        true,
+      );
+    }
+  }
+  for (const p of sheets) await openSheetsFile(p);
+  if (svgs.length > 0) {
+    await importPatterns(async () => {
+      for (const p of svgs) await importService.processFile(p);
+    });
+  }
+}
+
+/** v1.12.0: adds a sheets file's sheets, and says what was added. */
+async function openSheetsFile(filePath: string): Promise<void> {
+  const name = path.basename(filePath);
+  let text: string;
+  try {
+    text = (
+      fs as { readFileSync: (p: string, enc: string) => string }
+    ).readFileSync(filePath, "utf8");
+  } catch (e) {
+    message(`Couldn't read ${name}: ${(e as Error).message}`, true);
+    return;
+  }
+  const r = parseSheetsFile(text);
+  if (r.error) {
+    message(`${name} wasn't opened: ${r.error}.`, true);
+    return;
+  }
+  const added = sheetDialogService.addSheetsMm(r.sheets);
+  const units = configService.getSync("units") as string;
+  await showModal({
+    title:
+      added > 0
+        ? `Added ${added} sheet${added === 1 ? "" : "s"}`
+        : "No sheets added",
+    text: [
+      added > 0
+        ? `From ${name}:`
+        : `${name} has no sheets Grain-Nest could add.`,
+      ...r.notes,
+    ],
+    list: r.sheets.map((s) => describeSheet(s, units)),
+    buttons: [{ id: "ok", label: "OK", primary: true }],
+  });
 }
 
 /**
@@ -1295,6 +1396,7 @@ async function initialize(): Promise<void> {
   await step("initializeNapCheckbox", () => initializeNapCheckbox());
   await step("initializeFabricTypeSelect", () => initializeFabricTypeSelect());
   await step("initializeExportButtons", () => initializeExportButtons());
+  await step("initializeOpenFiles", () => initializeOpenFiles());
 
   // Load initial files from nest directory
   await step("loadInitialFiles", () => loadInitialFiles());
