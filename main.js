@@ -107,17 +107,61 @@ if (!gotTheLock) {
   });
 }
 
+// v1.12.1: the main window's size and place, kept between runs in
+// window-state.json next to settings.json. Used only if it's still on a
+// screen (a display may have been unplugged since).
+const windowStatePath = () =>
+  path.join(app.getPath("userData"), "window-state.json");
+
+function readWindowState() {
+  try {
+    const s = JSON.parse(fs.readFileSync(windowStatePath(), "utf8"));
+    const ok = (n) => typeof n === "number" && Number.isFinite(n);
+    if (![s.x, s.y, s.width, s.height].every(ok)) return null;
+    if (s.width < 400 || s.height < 300) return null;
+    const onScreen = screen.getAllDisplays().some(({ workArea: a }) => {
+      const w = Math.min(s.x + s.width, a.x + a.width) - Math.max(s.x, a.x);
+      const h = Math.min(s.y + s.height, a.y + a.height) - Math.max(s.y, a.y);
+      return w >= 100 && h >= 100;
+    });
+    return onScreen ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveWindowState(win) {
+  try {
+    const b = win.getNormalBounds();
+    fs.writeFileSync(
+      windowStatePath(),
+      JSON.stringify({
+        x: b.x,
+        y: b.y,
+        width: b.width,
+        height: b.height,
+        maximized: win.isMaximized(),
+        fullScreen: win.isFullScreen(),
+      }),
+    );
+  } catch (e) {
+    console.error("Couldn't save the window size:", e);
+  }
+}
+
 function createMainWindow() {
   openFilesReady = false;
-  // Create the browser window.
+  // Create the browser window: where it was last time, or 90% of the screen.
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const saved = readWindowState();
 
   var frameless = process.platform == "darwin";
   //var frameless = true;
 
   mainWindow = new BrowserWindow({
-    width: Math.ceil(width * 0.9),
-    height: Math.ceil(height * 0.9),
+    ...(saved
+      ? { x: saved.x, y: saved.y, width: saved.width, height: saved.height }
+      : { width: Math.ceil(width * 0.9), height: Math.ceil(height * 0.9) }),
     frame: !frameless,
     show: false,
     webPreferences: {
@@ -129,6 +173,16 @@ function createMainWindow() {
   });
 
   remote.enable(mainWindow.webContents);
+
+  const win = mainWindow;
+  if (saved && (saved.maximized || saved.fullScreen)) {
+    win.once("ready-to-show", () => {
+      win.show();
+      if (saved.fullScreen) win.setFullScreen(true);
+      else win.maximize();
+    });
+  }
+  win.on("close", () => saveWindowState(win));
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);

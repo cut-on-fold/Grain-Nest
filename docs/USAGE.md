@@ -997,6 +997,9 @@ everything back.
 
 - **Dark mode** — the dark-mode button at the bottom of the left-hand bar
   switches between light and dark. Grain-Nest remembers your choice.
+- **Window size** — Grain-Nest opens at the size and place you left it (or
+  full screen, if you left it full screen). If that place is no longer on a
+  screen (a display unplugged), it opens at 90% of the main screen.
 - **Info tab** — the info button on the left-hand bar shows the version you're running,
   where Grain-Nest comes from, a link to its source code and its licences.
 - **Update notice** — when a newer version of Grain-Nest is published, a notice
