@@ -13,12 +13,15 @@ import type {
 import { message } from "../utils/ui-helpers.js";
 import { foldReflectionTransform } from "../utils/dom-utils.js";
 import { toSvgUnits } from "../utils/conversion.js";
+import { isShaped, polygonPath } from "../utils/flaws.js";
 import {
   fabricWidthTag,
   inFolder,
   patternSource,
 } from "../utils/file-names.js";
 
+/** v1.13.0: flaws on a sheet, in the export. */
+const FLAW_COLOUR = "#c0392b";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape";
 const XMLNS_NS = "http://www.w3.org/2000/xmlns/";
@@ -847,7 +850,13 @@ export class ExportService {
 
     sheets.forEach((s, sheetIndex) => {
       const sheetPart = parts[s.sheet];
-      const sheetBounds = this.piecesBox(s, sheetPart.bounds, margin);
+      // v1.13.0: a hide keeps its whole outline on the page (so the
+      // projection lines up with it); rectangular fabric is cropped.
+      const outline = sheetPart.polygontree as unknown as Pt[];
+      const shaped = isShaped(outline, sheetPart.bounds);
+      const sheetBounds = shaped
+        ? { ...sheetPart.bounds }
+        : this.piecesBox(s, sheetPart.bounds, margin);
       const sheetName = (sheetPart.name || "").trim();
       const layer = this.createLayer(
         uniqueId(`layer-sheet-${sheetIndex + 1}`),
@@ -866,6 +875,13 @@ export class ExportService {
         // v1.6.0: drawn half a line width inside the page's edge, so the
         // whole line is on the page. v1.7.0: round the nested pieces.
         const inset = style.width / 2;
+        if (shaped) {
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("d", polygonPath(outline));
+          path.setAttribute("style", style.line(style.border));
+          border.appendChild(path);
+          layer.appendChild(border);
+        }
         const rect = document.createElementNS(SVG_NS, "rect");
         rect.setAttribute("x", round(sheetBounds.x + inset));
         rect.setAttribute("y", round(sheetBounds.y + inset));
@@ -878,8 +894,28 @@ export class ExportService {
           round(Math.max(sheetBounds.height - 2 * inset, 0)),
         );
         rect.setAttribute("style", style.line(style.border));
-        border.appendChild(rect);
-        layer.appendChild(border);
+        if (!shaped) {
+          border.appendChild(rect);
+          layer.appendChild(border);
+        }
+      }
+
+      // v1.13.0: the sheet's flaws, in red, on a group of their own.
+      const flawPolys = ((sheetPart.fileFlaws || []) as Pt[][]).concat(
+        (sheetPart.appFlawPolys || []) as Pt[][],
+      );
+      if (flawPolys.length) {
+        const g = document.createElementNS(SVG_NS, "g");
+        g.setAttribute("id", uniqueId(`flaws-${sheetIndex + 1}`));
+        g.setAttributeNS(INKSCAPE_NS, "inkscape:label", "Flaws");
+        flawPolys.forEach((f, i) => {
+          const path = document.createElementNS(SVG_NS, "path");
+          path.setAttribute("id", uniqueId(`flaw-${sheetIndex + 1}-${i + 1}`));
+          path.setAttribute("d", polygonPath(f));
+          path.setAttribute("style", style.line(FLAW_COLOUR));
+          g.appendChild(path);
+        });
+        layer.appendChild(g);
       }
 
       s.sheetplacements.forEach((p) => {

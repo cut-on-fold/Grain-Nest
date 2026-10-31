@@ -188,6 +188,11 @@ export class SvgParser {
 		// and filter steps below.
 		this.detectGrainLines(this.svgRoot);
 
+		// v1.13.0: flaws on a hide or a length of fabric (closed shapes
+		// labelled or id'd flaw-1, flaw-2…, or inside a "flaws" group),
+		// tagged data-grainnest-flaw="1" so they survive the flatten.
+		this.detectFlaws(this.svgRoot);
+
 		// §9.3.12 / phase-5r: resolve each piece's name from inkscape:label /
 		// <title> / id while the <g> ancestors are still in place, tagging it
 		// as data-grainnest-name so it survives the flatten below — which
@@ -1296,6 +1301,30 @@ export class SvgParser {
 				element.parentElement.appendChild(element.children[0]);
 			}
 		}
+	}
+
+	// v1.13.0: tags flaws — shapes whose inkscape:label or id contains
+	// "flaw" (flaw-1, flaw-2…), or any shape inside a <g> labelled or id'd
+	// "flaw"/"flaws". On a sheet they become holes nothing is nested over;
+	// drawn red so they stand out.
+	detectFlaws(element, withinFlawGroup){
+		withinFlawGroup = !!withinFlawGroup;
+		var label = (element.getAttribute && element.getAttribute('inkscape:label') || '').toLowerCase();
+		var id = (element.getAttribute && element.getAttribute('id') || '').toLowerCase();
+		if(element.tagName === 'g'){
+			if(/^flaws?$/.test(label) || /^flaws?$/.test(id)) withinFlawGroup = true;
+		}
+		var children = Array.prototype.slice.call(element.children || []);
+		for(var i = 0; i < children.length; i++){
+			this.detectFlaws(children[i], withinFlawGroup);
+		}
+		if(element.tagName === 'g' || element.tagName === 'svg' || element.tagName === 'defs') return;
+		if(element.getAttribute('data-grainnest-grain')) return;
+		if(!(withinFlawGroup || label.indexOf('flaw') !== -1 || id.indexOf('flaw') !== -1)) return;
+		element.setAttribute('data-grainnest-flaw', '1');
+		var existing = element.getAttribute('style') || '';
+		var flawStyle = 'stroke: #c0392b !important; stroke-width: 1.2px !important; fill: rgba(192,57,43,0.25) !important; fill-opacity: 1 !important;';
+		element.setAttribute('style', existing ? existing.replace(/;\s*$/, '') + '; ' + flawStyle : flawStyle);
 	}
 
 	// Walk the SVG tree (with <g> ancestors still in place) and tag elements

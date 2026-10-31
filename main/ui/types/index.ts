@@ -66,6 +66,8 @@ export interface UIConfig extends DeepNestConfig {
   warnUncodedPieces?: boolean;
   /** v1.10.0: ask before leaving the nest screen with an unsaved layout. */
   askBeforeLeavingNest?: boolean;
+  /** v1.13.0: area on a hide: "m2" (default) or "ft2". */
+  areaUnits?: "m2" | "ft2";
   /** v1.3.0: saved-settings migration level (see ConfigService). */
   settingsRevision?: number;
 }

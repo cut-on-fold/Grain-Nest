@@ -25,6 +25,7 @@ import {
   clearChildren,
 } from "../utils/dom-utils.js";
 import { millisecondsToStr } from "../utils/ui-helpers.js";
+import { hideArea, unitsPerMm } from "../utils/flaws.js";
 import {
   copiesToNest,
   minLengthSvg as minLengthOf,
@@ -92,6 +93,13 @@ interface NestViewData {
    * Returns "-" when no nest is selected.
    */
   getMinLength: () => string;
+  /** v1.13.0: on hides, the area used and left instead of the length. */
+  getHideArea: () => {
+    used: string;
+    total: string;
+    percent: string;
+    left: string;
+  } | null;
   /**
    * §9.0.1 R6-A: nests ranked by min fabric length, least first — the
    * order the "best nests so far" list renders in.
@@ -234,9 +242,14 @@ export class NestViewService {
         if (groupElement && this.deepNest.parts[s.sheet]) {
           this.deepNest.parts[s.sheet].svgelements.forEach((e) => {
             const node = e.cloneNode(false) as SVGElement;
-            node.setAttribute("stroke", "#ffffff");
-            node.setAttribute("fill", "none");
             node.removeAttribute("style");
+            // v1.13.0: flaws stay red, so you can see pieces keep off them.
+            const flaw =
+              e.getAttribute &&
+              (e.getAttribute("data-grainnest-flaw") ||
+                e.getAttribute("data-grainnest-appflaw"));
+            node.setAttribute("stroke", flaw ? "#c0392b" : "#ffffff");
+            node.setAttribute("fill", flaw ? "rgba(192,57,43,0.3)" : "none");
             groupElement!.appendChild(node);
           });
         }
@@ -539,6 +552,18 @@ export class NestViewService {
         // rotation-aware placedBounds) — the old `p.x + bounds.width`
         // shortcut reported 171.5 in on a 160 in sheet that held everything
         // (testing round 6).
+        getHideArea: function (this: {
+          get: (key: string) => () => SelectableNestingResult[];
+        }) {
+          const selected = this.get("getSelected")();
+          if (selected.length === 0) return null;
+          return hideArea(
+            selected[0] as unknown as Parameters<typeof hideArea>[0],
+            deepNest.parts as unknown as Parameters<typeof hideArea>[1],
+            unitsPerMm(Number(config.getSync("scale")) || 72),
+            String(config.getSync("areaUnits") || "m2"),
+          );
+        },
         getMinLength: function (this: {
           get: (key: string) => () => SelectableNestingResult[];
         }): string {
@@ -561,6 +586,14 @@ export class NestViewService {
         // §9.0.1 R6-A: per-row fabric-length label so the ranking is
         // visible on the list itself.
         getNestLength: function (n: SelectableNestingResult): string {
+          // v1.13.0: on hides, the area used.
+          const area = hideArea(
+            n as unknown as Parameters<typeof hideArea>[0],
+            deepNest.parts as unknown as Parameters<typeof hideArea>[1],
+            unitsPerMm(Number(config.getSync("scale")) || 72),
+            String(config.getSync("areaUnits") || "m2"),
+          );
+          if (area) return area.used;
           const v = minLengthSvg(n);
           return v === null ? "" : formatLengthSvg(v);
         },

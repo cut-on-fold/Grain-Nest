@@ -159,8 +159,13 @@
         <div id="nestinfo" class='{{ nests.length > 0 ? "active" : "" }}'>
         	<div class="group"><h1>{{ getSelected().length > 0 ? getSelected()[0].placements.length : '-' }}</h1><span class="label">{{ getSelected().length > 0 ? (getSelected()[0].placements.length > 1 ? 'sheets used' : 'sheet used') : '' }}</span></div>
         	<div class="group"><h1>{{ getPartsPlaced() }}</h1><span class="label">parts placed</span></div>
+        	{{#if getHideArea()}}
+        	<div class="group"><h1>{{ getHideArea().used }}</h1><span class="label">used of {{ getHideArea().total }} ({{ getHideArea().percent }}%)</span></div>
+        	<div class="group"><h1>{{ getHideArea().left }}</h1><span class="label">left over, flaws not counted</span></div>
+        	{{else}}
         	<div class="group"><h1>{{ getUtilisation() }}%</h1><span class="label">sheet utilisation</span></div>
         	<div class="group"><h1>{{ getMinLength() }}</h1><span class="label">min fabric length</span></div>
+        	{{/if}}
         	<div class="group"><h1>best nests so far</h1></div>
         	<div id="nestlist">
         		{{#each getNestsByFabric():i}}
@@ -341,6 +346,9 @@
           							{{/if}}
           						</td>
           						<td class="rowactions"><div class="rowbuttons">
+          							{{#if sheet}}
+          								<a href="#" class="mirror flawsbtn" on-click="flaws:{{this}}" title="Marks, holes or bad patches on this sheet to keep pieces off, measured from a corner">Flaws…{{ (flaws && flaws.length) || (fileFlaws && fileFlaws.length) ? ' (' + ((flaws ? flaws.length : 0) + (fileFlaws ? fileFlaws.length : 0)) + ')' : '' }}</a>
+          							{{/if}}
           							{{#if !sheet && typeof grainAngle === "number"}}
           								<a href="#" class="mirror fliptop" on-click="fliptop:{{this}}" title="Turn the piece end-to-end: the arrow in the picture shows its top, which goes to the start (left) of the fabric">Flip top</a>
           							{{/if}}
@@ -473,6 +481,13 @@
               <span class="radiolabel">inches</span>
               <input type="radio" name="units" value="mm" data-config="units" />
               <span class="radiolabel">mm</span>
+            </dd>
+            <dt>Area on a hide</dt>
+            <dd>
+              <select name="areaUnits" data-config="areaUnits">
+                <option value="m2">square metres</option>
+                <option value="ft2">square feet</option>
+              </select>
             </dd>
             <dt>Space between pieces</dt>
             <dd>
@@ -1513,6 +1528,13 @@
           whether to save it. Either way, the best layout is kept as
           <em>Last nest (not saved)</em> above your pieces until the next nest.
           Ticking "Don't ask again" there turns this off.
+        </div>
+
+        <div class="config_explain" id="explain_areaUnits">
+          <h1>Area on a hide</h1>
+          On a shaped sheet (a hide), the nest screen shows the area the pieces
+          use and what's left, instead of a fabric length. Choose square metres
+          or square feet.
         </div>
 
         <div class="config_explain" id="explain_equalCutsFuse">

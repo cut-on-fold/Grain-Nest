@@ -847,6 +847,40 @@ export class DeepNest {
     }
     var openelements = svgelements.slice(); // elements that are not a part of the poly tree but may still be a part of the part (images, lines, possibly text..)
 
+    // v1.13.0: a flaw drawn across the edge of a hide isn't inside it, so it
+    // comes out as a shape of its own: give it to the shape it overlaps
+    // most (a flaw is never a piece), or drop it.
+    function isFlawEl(el) {
+      return !!(el && el.getAttribute && el.getAttribute("data-grainnest-flaw"));
+    }
+    var looseFlaws = [];
+    for (var i = 0; i < polygons.length; i++) {
+      if (isFlawEl(svgelements[polygons[i].source])) {
+        looseFlaws.push(polygons[i]);
+        polygons.splice(i, 1);
+        i--;
+      }
+    }
+    var self = this;
+    looseFlaws.forEach(function (f) {
+      var best = null;
+      var bestHits = 0;
+      polygons.forEach(function (p) {
+        var hits = 0;
+        f.forEach(function (pt) {
+          if (self.pointInPolygon(pt, p) === true) hits++;
+        });
+        if (hits > bestHits) {
+          bestHits = hits;
+          best = p;
+        }
+      });
+      if (best) {
+        if (!best.children) best.children = [];
+        best.children.push(f);
+      }
+    });
+
     for (var i = 0; i < polygons.length; i++) {
       var part = {};
       part.polygontree = polygons[i];
@@ -938,6 +972,21 @@ export class DeepNest {
       // in part.svgelements, so they still render and export on the cut piece.
       // A genuine cut-out is still drawn/cut from svgelements — we just never
       // pack another piece into it, which is the correct, safe choice for fabric.
+      // v1.13.0: flaws drawn in the file (flaw-1, flaw-2…) are kept apart,
+      // so the shape keeps them if it's made a sheet (a hide), where nothing
+      // is nested over them.
+      if (part.polygontree.children && part.polygontree.children.length) {
+        var flawPolys = part.polygontree.children.filter(function (c) {
+          return isFlawEl(svgelements[c.source]);
+        });
+        if (flawPolys.length) {
+          part.fileFlaws = flawPolys.map(function (c) {
+            return c.map(function (pt) {
+              return { x: pt.x, y: pt.y };
+            });
+          });
+        }
+      }
       if (
         !part.sheet &&
         part.polygontree.children &&
@@ -1689,6 +1738,24 @@ export class DeepNest {
     return true;
   };
 
+  /**
+   * v1.13.0: a sheet's outline with its flaws as holes — those drawn in its
+   * file (fileFlaws) and those added in the Flaws box (appFlawPolys, kept
+   * up to date by the UI) — so nothing is nested over them.
+   */
+  sheetWithFlaws(part) {
+    var tree = this.cloneTree(part.polygontree);
+    var flaws = (part.fileFlaws || []).concat(part.appFlawPolys || []);
+    if (flaws.length) {
+      tree.children = flaws.map(function (f) {
+        return f.map(function (pt) {
+          return { x: pt.x, y: pt.y };
+        });
+      });
+    }
+    return tree;
+  }
+
   // progressCallback is called when progress is made
   // displayCallback is called when a new placement has been made
   start(p, d) {
@@ -1719,7 +1786,9 @@ export class DeepNest {
               ? this.parts[i].nestQuantity
               : this.parts[i].quantity,
         sheet: this.parts[i].sheet,
-        polygontree: this.cloneTree(this.parts[i].polygontree),
+        polygontree: this.parts[i].sheet
+          ? this.sheetWithFlaws(this.parts[i])
+          : this.cloneTree(this.parts[i].polygontree),
         filename: this.parts[i].filename,
         allowedRotations: grainRuleToRotations(
           this.parts[i],

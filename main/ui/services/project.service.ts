@@ -22,6 +22,7 @@ import type {
   NestViewData,
 } from "../types/index.js";
 import type { Part, NestingResult } from "../../../index.d.ts";
+import type { SheetFlaw } from "../utils/flaws.js";
 import { message } from "../utils/ui-helpers.js";
 import { inFolder, patternSource } from "../utils/file-names.js";
 import {
@@ -118,6 +119,8 @@ interface SavedPart {
   excluded?: boolean;
   /** v1.2.0: sheets only — the fabric this sheet is for. */
   fabric?: string;
+  /** v1.13.0: sheets only — flaws added in the Flaws box. */
+  flaws?: SheetFlaw[];
   /** v1.9.0: the piece's Fuse choice (main + interfacing codes). */
   fuseMode?: "all" | "one" | "separate";
   /** v1.9.0: how many are mirrored (absent = Auto, half). */
@@ -335,8 +338,8 @@ export class ProjectService {
     // imported twice keeps two separate sets of positions.
     const byFile = new Map<unknown, Part[]>();
     for (const p of this.deepNest.parts) {
-      if (p.sheet || p.isMirrorCopy || typeof p.importPartIndex !== "number")
-        continue;
+      // v1.13.0: sheets from a file (a hide) are saved as part of it.
+      if (p.isMirrorCopy || typeof p.importPartIndex !== "number") continue;
       const key = p.importRef ?? p.filename;
       byFile.set(key, [...(byFile.get(key) ?? []), p]);
     }
@@ -369,12 +372,16 @@ export class ProjectService {
         fuseMode: p.sheet ? undefined : p.fuseMode,
         mirrorCount: p.sheet ? undefined : p.mirrorCount,
         userUnfolded: p.sheet ? undefined : p.userUnfolded || undefined,
+        // v1.13.0: flaws added in the Flaws box.
+        flaws: p.sheet && p.flaws && p.flaws.length ? p.flaws : undefined,
       };
 
       // Sheet — has no entry in deepNest.imports (addSheet uses
       // filename=null). Capture dimensions so we can recreate via a
       // synthetic rect-SVG import on load.
-      if (p.sheet) {
+      // v1.13.0: only a sheet made with Add a sheet (no file behind it);
+      // a sheet from a file (a hide) keeps its shape through its import.
+      if (p.sheet && typeof p.importPartIndex !== "number") {
         return {
           source: {
             kind: "sheet-rect",
@@ -768,6 +775,7 @@ export class ProjectService {
       part.seamAllowance = saved.seamAllowance;
     part.excluded = !!saved.excluded;
     if (saved.sheet && saved.fabric) part.fabric = saved.fabric;
+    if (saved.sheet && saved.flaws) part.flaws = saved.flaws;
     if (saved.fuseMode) part.fuseMode = saved.fuseMode;
     if (typeof saved.mirrorCount === "number")
       part.mirrorCount = saved.mirrorCount;

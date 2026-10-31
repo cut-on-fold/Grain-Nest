@@ -21,6 +21,7 @@ This guide is for version 1.5.0 on a Mac with Apple Silicon.
 - [Quantity, mirror copies and cutting on the fold](#quantity-mirror-copies-and-cutting-on-the-fold)
 - [Sew lines (seam allowance)](#sew-lines-seam-allowance)
 - [Sheets of fabric](#sheets-of-fabric)
+- [Hides and flaws](#hides-and-flaws)
 - [Working with the parts list](#working-with-the-parts-list)
 - [Running a nest](#running-a-nest)
 - [Saved layouts](#saved-layouts)
@@ -595,6 +596,48 @@ Grain rule / Fabric column). One fabric can have several sheets — two lining
 remnants, say — and all of them are used. **Start nest** won't run with every
 sheet unticked.
 
+## Hides and flaws
+
+### Nesting on a hide
+
+A sheet doesn't have to be a rectangle. For a side of leather (or any odd-shaped
+piece), draw round it in Inkscape at full size: trace a photo taken square over
+it, with a grid or a ruler in the picture to set the scale. Import the drawing,
+then tick **Sheet** on its row. Pieces nest inside the outline.
+
+On a hide the nest screen shows the **area** the pieces use, out of the hide's
+area, and what's **left over** once flaws are taken off, instead of a fabric
+length. Square metres or square feet: **Settings → Area on a hide**. The best
+nests list shows the area used too.
+
+In the exported SVG a hide isn't cropped: the page is the whole hide, its
+outline is the sheet border (when Settings draws sheet borders), and its flaws
+are on a **Flaws** group in red, so the projection can be lined up with the real
+hide.
+
+### Flaws drawn in the file
+
+Draw each flaw (a hole, a scar, a thin or stained patch) as a closed shape
+inside the outline, and give it a Label or ID containing `flaw`: `flaw-1`,
+`flaw-2`… (or put the shapes in a group labelled `flaws`). They show in red.
+Nothing is nested over a flaw, and pieces keep the usual space between pieces
+from it. A flaw on the edge can cross the outline; it's still kept.
+
+Anything you'd rather not use can be marked as a flaw the same way.
+
+### The Flaws box
+
+For a flaw you find on the table, click **Flaws…** on the sheet's row (any
+sheet: a hide or a length of fabric). Choose the corner you measured from, then
+how far **along the length** and how far **in from the edge** to the middle of
+the flaw, and its shape: **round** (its size across) or a **rectangle** (its
+length along and width across). The drawing shows it to scale as you type;
+**Add flaw** adds it. Each flaw is listed with **Remove**. On a hide, the
+corners are those of the box round it.
+
+The button shows how many flaws a sheet has (`Flaws… (2)`), counting those drawn
+in the file. Flaws added in the box are saved with the project.
+
 ## Working with the parts list
 
 ### The Actions column
@@ -1012,7 +1055,7 @@ everything back.
 
 ## Example files
 
-Three example files come with Grain-Nest:
+Four example files come with Grain-Nest:
 
 - [example-pattern.svg](../examples/example-pattern.svg) — a made-up dress
   pattern set out the recommended way: one **Pieces** layer, and a group per
@@ -1025,6 +1068,10 @@ Three example files come with Grain-Nest:
   150 cm × 3 m sheet: the OF pieces cut on the fold, and the C2 pieces with
   mirror copies. It shows the layers and groups described in
   [What's in the exported SVG](#whats-in-the-exported-svg).
+- [example-hide.svg](../examples/example-hide.svg) — a made-up hide about
+  1.6 × 1.2 m, drawn in mm, with `flaw-1` inside it and `flaw-2` across its edge
+  (see [Hides and flaws](#hides-and-flaws)). Import it with a pattern and tick
+  **Sheet** on the hide's row.
 - [example-sheets.gnsheets](../examples/example-sheets.gnsheets) — three sheets
   of fabric (main, lining and interfacing) in a
   [sheets file](#the-sheets-file). Double-click it, or open it with Grain-Nest,

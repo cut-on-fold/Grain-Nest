@@ -76,6 +76,7 @@ import {
 } from "./utils/saved-layouts.js";
 import { LayoutsService } from "./services/layouts.service.js";
 import { ViewsService } from "./services/views.service.js";
+import { FlawsService } from "./services/flaws.service.js";
 import { clearViews, refreshViewFlags, setCurrentView } from "./utils/views.js";
 import type { NestJob } from "./utils/nest-jobs.js";
 import { describeSheet, parseSheetsFile } from "./utils/sheets-file.js";
@@ -213,6 +214,7 @@ let sheetDialogService: SheetDialogService;
 let projectService: ProjectService;
 let layoutsService: LayoutsService;
 let viewsService: ViewsService;
+let flawsService: FlawsService;
 
 /**
  * Electron and Node.js module references
@@ -831,6 +833,9 @@ function initializeComponents(): void {
   // v1.11.0: views (the View menu above the saved layouts).
   viewsService = new ViewsService(getDeepNest(), layoutsService);
   partsViewService.attachViews(viewsService);
+  // v1.13.0: the Flaws box on a sheet's row.
+  flawsService = new FlawsService(configService as unknown as ConfigObject);
+  partsViewService.attachFlaws(flawsService);
 
   // Initialize nest view
   nestViewService = createNestViewService({
@@ -973,6 +978,9 @@ function initializeComponents(): void {
       // project's nap flag said (ProjectService set deepNest.nap
       // during applyLoadData).
       syncNapCheckboxFromDeepNest();
+      // v1.13.0: redraw the sheets' flaws added in the Flaws box.
+      flawsService.refreshAll(getDeepNest().parts);
+      partsViewService.update();
       partsViewService.refreshLayouts();
       resize();
     },

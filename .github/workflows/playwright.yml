@@ -18,8 +18,8 @@ jobs:
       - name: boost
         if: startsWith(matrix.os, 'ubuntu')
         run: sudo apt-get update && sudo apt-get install -yq libboost-dev
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
       - name: Install dependencies
@@ -53,7 +53,7 @@ jobs:
         run: xvfb-run npm test
       # The report is only worth keeping when a test failed, and not for long:
       # artifacts count against the account's Actions storage.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report

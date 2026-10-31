@@ -34,6 +34,7 @@ import {
   type FuseMode,
 } from "../utils/auto-cuts.js";
 import type { ViewOption, ViewsService } from "../services/views.service.js";
+import type { FlawsService } from "../services/flaws.service.js";
 import type {
   LayoutFolder,
   LayoutRow,
@@ -770,6 +771,14 @@ export class PartsViewService {
     this.refreshLayouts();
   }
 
+  /** v1.13.0: the Flaws box on a sheet's row. */
+  private flaws: FlawsService | null = null;
+
+  attachFlaws(flaws: FlawsService): void {
+    this.flaws = flaws;
+    flaws.onChange = () => this.update();
+  }
+
   /** v1.9.0: the cut-code settings changed; redraw the rows. */
   updateAutoCuts(): void {
     if (!this.ractive) return;
@@ -1253,6 +1262,15 @@ export class PartsViewService {
     ractive.on(
       "layoutfolder",
       layoutAction((fabric) => this.layouts!.toggleFolder(fabric)),
+    );
+    // v1.13.0: Flaws… on a sheet's row.
+    ractive.on(
+      "flaws",
+      (_e: RactiveEvent, ...args: unknown[]): boolean | void => {
+        const part = args[0] as Part;
+        if (this.flaws && part && part.sheet) void this.flaws.show(part);
+        return false;
+      },
     );
     // v1.11.0: views.
     ractive.on("saveview", (): boolean => {

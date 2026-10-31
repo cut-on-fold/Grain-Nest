@@ -28,6 +28,9 @@ It's a Mac app (Apple Silicon), built on the open-source
   name — with line colours and width from Settings, a sheet border and a
   calibration square, ready for projector cutting (e.g. Pattern
   Projector). There's a cut list too.
+- **Hides and flaws.** Nest on any shape, such as a side of leather drawn in
+  Inkscape (area used shown in m² or sq ft), and keep pieces off flaws, drawn
+  in the file (`flaw-1`…) or measured from a corner in the app.
 - **Projects.** Save and reopen everything as a `.gnp` file.
 - **Files from Finder and other apps.** Double-click a project, open an SVG
   with Grain-Nest, or hand it a sheets file (`.gnsheets`) listing your

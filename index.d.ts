@@ -298,6 +298,22 @@ export type Part = {
   autoCopyOf?: Part;
   userUnfolded?: boolean;
   /**
+   * v1.13.0, sheets: flaws to nest around. `flaws` are those added in the
+   * Flaws box (saved, in mm); `appFlawPolys` their outlines in drawing units
+   * (worked out from `flaws`); `fileFlaws` those drawn in the file as
+   * flaw-1, flaw-2… (from the import, not saved).
+   */
+  flaws?: {
+    corner: "tl" | "tr" | "bl" | "br";
+    alongMm: number;
+    inMm: number;
+    shape: "round" | "rect";
+    sizeMm: number;
+    widthMm?: number;
+  }[];
+  appFlawPolys?: { x: number; y: number }[][];
+  fileFlaws?: { x: number; y: number }[][];
+  /**
    * v1.11.0: not in the view being shown (utils/views.ts): hidden from the
    * list and nested as none. Never saved; worked out when the view changes.
    */

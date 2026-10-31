@@ -1074,23 +1074,40 @@ function getInnerNfp(A, B, config) {
   var clipperNfp = innerNfpToClipperCoordinates(nfp.children, config);
   var clipperHoles = innerNfpToClipperCoordinates(holes, config);
 
-  var finalNfp = new ClipperLib.Paths();
+  // Grain-Nest v1.13.0: a sheet's holes (flaws) usually leave holes in
+  // the area a part can go. Each region is returned with its holes as
+  // `children`, which innerNfpToClipperCoordinates turns the opposite way
+  // round. Returning every ring as a plain region (as before) made all of
+  // them the same way round, so a hole became somewhere a part could be
+  // placed — now and then a piece landed on a flaw.
+  var tree = new ClipperLib.PolyTree();
   var clipper = new ClipperLib.Clipper();
 
   clipper.AddPaths(clipperHoles, ClipperLib.PolyType.ptClip, true);
   clipper.AddPaths(clipperNfp, ClipperLib.PolyType.ptSubject, true);
 
-  if (!clipper.Execute(ClipperLib.ClipType.ctDifference, finalNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
+  if (!clipper.Execute(ClipperLib.ClipType.ctDifference, tree, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
     return nfp.children;
   }
 
-  if (finalNfp.length == 0) {
+  var regions = [];
+  var outers = tree.Childs();
+  for (let i = 0; i < outers.length; i++) {
+    ClipperLib.JS.AddOuterPolyNodeToExPolygons(outers[i], regions);
+  }
+  if (regions.length == 0) {
     return null;
   }
 
   var f = [];
-  for (let i = 0; i < finalNfp.length; i++) {
-    f.push(toNestCoordinates(finalNfp[i], config.clipperScale));
+  for (let i = 0; i < regions.length; i++) {
+    var region = toNestCoordinates(regions[i].outer, config.clipperScale);
+    if (regions[i].holes.length > 0) {
+      region.children = regions[i].holes.map(function (h) {
+        return toNestCoordinates(h, config.clipperScale);
+      });
+    }
+    f.push(region);
   }
 
   if (typeof A.source !== 'undefined' && typeof B.source !== 'undefined') {
@@ -1896,3 +1913,7 @@ function placeParts(sheets, parts, config, nestindex) {
 function alert(message) {
   console.log('alert: ', message);
 }
+
+// Grain-Nest v1.13.0: two steps of the placement, reachable from tests
+// (tests/engine-holes-v1130.spec.ts), which can't import this module.
+window.grainnestEngine = { getInnerNfp, innerNfpToClipperCoordinates };

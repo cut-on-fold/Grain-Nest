@@ -29,10 +29,10 @@ jobs:
     runs-on: macos-latest # Apple Silicon (arm64)
     timeout-minutes: 60 # notarising usually takes minutes, now and then much longer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Use Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.x
           cache: npm
@@ -78,7 +78,7 @@ jobs:
       # build_release.yml picks this up in the same run; a manual build can be
       # downloaded from the run's summary for a couple of days. Longer than that
       # and a 100 MB disk image eats the account's Actions storage.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: grain-nest-macos-arm64
           path: ${{ env.DMG }}

@@ -2619,3 +2619,65 @@ body.dark-mode #bins svg * {
   color: var(--text-secondary);
   font-style: italic;
 }
+
+/* v1.13.0: the Flaws box. */
+.gn-modal.gn-flaws {
+  width: 30em;
+}
+.gn-flaws .fl-draw {
+  display: block;
+  margin: 0.2em 0 0.6em;
+  max-width: 100%;
+}
+.gn-flaws .fl-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0.45em 0;
+  flex-wrap: wrap;
+}
+.gn-flaws .fl-row[hidden] {
+  display: none;
+}
+.gn-flaws .fl-row > span:first-child {
+  width: 9.5em;
+  color: var(--text-secondary);
+}
+.gn-flaws input,
+.gn-flaws select {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  padding: 0.3em 0.5em;
+  color: var(--input-text);
+  font: inherit;
+}
+.gn-flaws input[type="number"] {
+  width: 4.5em;
+}
+.gn-flaws input.error {
+  border-color: #c0392b;
+}
+.gn-flaws .fl-hint {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  margin: 0.3em 0;
+}
+.gn-flaws .fl-list {
+  border-top: 1px solid var(--border-color);
+  margin-top: 0.6em;
+  padding-top: 0.4em;
+  font-size: 0.9em;
+}
+.gn-flaws .fl-list:empty {
+  display: none;
+}
+.gn-flaws .fl-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.15em 0;
+}
+.gn-flaws .fl-remove {
+  color: #c0392b;
+}
