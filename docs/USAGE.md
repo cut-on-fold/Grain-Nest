@@ -607,9 +607,12 @@ then tick **Sheet** on its row. Pieces nest inside the outline.
 
 Anything hidden in the drawing (a layer with its eye closed, a reference
 outline) is left out on import, so keep only the usable shape and its flaws
-showing. An outline traced in many small steps is smoothed for nesting, at most
-2 mm inside the line you drew; the list, the nest screen and the export keep
-your outline.
+showing.
+
+The outline is used exactly as drawn. Keep it simple: a hide traced from a
+photo in hundreds of tiny steps takes much longer to nest (over half a minute
+to the first layout at 750 points, a couple of seconds at under 200), so smooth
+it first (in Inkscape, **Path → Simplify**).
 
 On a hide the nest screen shows the **area** the pieces use, out of the hide's
 area, and what's **left over** once flaws are taken off, instead of a fabric
