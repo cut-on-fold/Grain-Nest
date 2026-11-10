@@ -179,6 +179,10 @@ export class SvgParser {
 		// applyTransform also avoids transforming thousands of throwaway nodes.
 		this.removeDefsAndClips(this.svgRoot);
 
+		// v1.13.1: anything hidden in the drawing (a layer with its eye
+		// closed, a reference outline) is left out, as it is on screen.
+		this.removeHidden(this.svgRoot);
+
 		// apply any transformations, so that all path positions etc will be in the same coordinate space
 		this.applyTransform(this.svgRoot, '', false, dxfFlag);
 
@@ -1049,6 +1053,7 @@ export class SvgParser {
 						path.setAttribute('transform', transformProperty);
 					}
 
+					this.carryTags(element, path);
 					element.parentElement.replaceChild(path, element);
 
 					element = path;
@@ -1151,6 +1156,7 @@ export class SvgParser {
 						' Z';
 
 					path.setAttribute('d', d);
+					this.carryTags(element, path);
 
 					// Copy other attributes that might be relevant
 					if(element.hasAttribute('style')) {
@@ -1268,6 +1274,7 @@ export class SvgParser {
 						polygon.setAttribute('transform', transformProperty);
 					}
 
+					this.carryTags(element, polygon);
 					element.parentElement.replaceChild(polygon, element);
 					element = polygon;
 
@@ -1303,6 +1310,36 @@ export class SvgParser {
 		}
 	}
 
+	// v1.13.1: drops elements hidden with display:none (as an attribute or
+	// in style), and everything inside them. Inkscape hides a layer or an
+	// object this way.
+	removeHidden(element){
+		var children = Array.prototype.slice.call(element.children || []);
+		for(var i = 0; i < children.length; i++){
+			var c = children[i];
+			if(c.tagName === 'defs') continue;
+			var display = (c.getAttribute && c.getAttribute('display') || '').trim().toLowerCase();
+			var style = (c.getAttribute && c.getAttribute('style') || '');
+			if(display === 'none' || /(^|;)\s*display\s*:\s*none\s*(;|$)/i.test(style)){
+				element.removeChild(c);
+			}
+			else{
+				this.removeHidden(c);
+			}
+		}
+	}
+
+	// v1.13.1: a circle, ellipse or rectangle is redrawn as a path or polygon
+	// when the drawing is scaled; the new shape keeps the old one's id, label
+	// and Grain-Nest tags, so it can still be named or found as a flaw.
+	carryTags(from, to){
+		var attrs = from.attributes;
+		for(var i = 0; i < attrs.length; i++){
+			var n = attrs[i].name;
+			if(n === 'id' || n === 'inkscape:label' || n.indexOf('data-grainnest-') === 0) to.setAttribute(n, attrs[i].value);
+		}
+	}
+
 	// v1.13.0: tags flaws — shapes whose inkscape:label or id contains
 	// "flaw" (flaw-1, flaw-2…), or any shape inside a <g> labelled or id'd
 	// "flaw"/"flaws". On a sheet they become holes nothing is nested over;
@@ -1312,7 +1349,9 @@ export class SvgParser {
 		var label = (element.getAttribute && element.getAttribute('inkscape:label') || '').toLowerCase();
 		var id = (element.getAttribute && element.getAttribute('id') || '').toLowerCase();
 		if(element.tagName === 'g'){
-			if(/^flaws?$/.test(label) || /^flaws?$/.test(id)) withinFlawGroup = true;
+			// v1.13.1: any group named for a flaw (flaws, flaw-1, "Flaw 2"…),
+			// so a flaw that was grouped in Inkscape still counts.
+			if(label.indexOf('flaw') !== -1 || id.indexOf('flaw') !== -1) withinFlawGroup = true;
 		}
 		var children = Array.prototype.slice.call(element.children || []);
 		for(var i = 0; i < children.length; i++){
@@ -1322,6 +1361,11 @@ export class SvgParser {
 		if(element.getAttribute('data-grainnest-grain')) return;
 		if(!(withinFlawGroup || label.indexOf('flaw') !== -1 || id.indexOf('flaw') !== -1)) return;
 		element.setAttribute('data-grainnest-flaw', '1');
+		// v1.13.1: a flaw drawn round but not joined up is closed for you.
+		if(element.tagName === 'path'){
+			var d = element.getAttribute('d') || '';
+			if(d && !/z\s*$/i.test(d)) element.setAttribute('d', d + ' Z');
+		}
 		var existing = element.getAttribute('style') || '';
 		var flawStyle = 'stroke: #c0392b !important; stroke-width: 1.2px !important; fill: rgba(192,57,43,0.25) !important; fill-opacity: 1 !important;';
 		element.setAttribute('style', existing ? existing.replace(/;\s*$/, '') + '; ' + flawStyle : flawStyle);
