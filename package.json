@@ -1,7 +1,7 @@
 {
   "name": "grain-nest",
-  "version": "1.13.0",
-  "description": "Pattern nesting for dressmaking \u2014 fork of deepnest-next adding grain-direction constraints",
+  "version": "1.13.1",
+  "description": "Pattern nesting for dressmaking — fork of deepnest-next adding grain-direction constraints",
   "private": true,
   "main": "main.js",
   "types": "index.d.ts",
@@ -111,7 +111,7 @@
   },
   "contributors": [
     {
-      "name": "Josef Fr\u00f6hle",
+      "name": "Josef Fröhle",
       "email": "github@josef-froehle.de"
     }
   ]

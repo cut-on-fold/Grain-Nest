@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1600mm" height="1200mm" viewBox="0 0 1600 1200">
+  <!-- One sheet with flaws drawn six ways: a circle, an ellipse, a rectangle named only by its label, a group named for a flaw, a path not joined up, and one on a layer of its own. A hidden shape is left out. -->
+  <g id="layer1" inkscape:groupmode="layer" inkscape:label="Sheet">
+    <rect id="sheet" x="100" y="100" width="1400" height="1000" fill="none" stroke="black"/>
+    <circle id="flaw-1" cx="300" cy="300" r="40" fill="none" stroke="red"/>
+    <ellipse id="flaw-2" cx="600" cy="300" rx="50" ry="30" fill="none" stroke="red"/>
+    <rect id="rect7" inkscape:label="Flaw 3" x="850" y="260" width="100" height="80" fill="none" stroke="red"/>
+    <g id="flaw-4"><path id="path9" d="M300,700 L400,700 L400,800 L300,800 Z" fill="none" stroke="red"/></g>
+    <path id="flaw-5" d="M600,700 L700,700 L700,800 L600,800" fill="none" stroke="red"/>
+    <circle id="hidden1" cx="1200" cy="900" r="60" fill="none" stroke="blue" style="display:none"/>
+  </g>
+  <g id="layer2" inkscape:groupmode="layer" inkscape:label="Marks" transform="translate(10,10)">
+    <circle id="flaw-6" cx="1100" cy="500" r="40" fill="none" stroke="red"/>
+  </g>
+</svg>

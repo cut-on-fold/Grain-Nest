@@ -1739,12 +1739,46 @@ export class DeepNest {
   };
 
   /**
+   * v1.13.1: a hide traced from a photo can have hundreds of tiny steps
+   * round its edge, and every one slows the nest. For nesting only, an
+   * outline with more than 60 points is moved in by 1 mm and its steps
+   * smoothed to within 1 mm, so it stays inside the shape as drawn. The
+   * list, the nest screen and the export keep the outline as drawn.
+   */
+  thinSheetOutline(tree) {
+    if (!tree || tree.length <= 60 || typeof window.simplify !== "function") {
+      return tree;
+    }
+    var tol = (config.scale || 72) / 25.4;
+    var inner = this.polygonOffset(tree, -tol);
+    if (!inner || !inner.length || !inner[0] || !inner[0].length) return tree;
+    var best = inner[0];
+    for (var i = 1; i < inner.length; i++) {
+      if (
+        Math.abs(GeometryUtil.polygonArea(inner[i])) >
+        Math.abs(GeometryUtil.polygonArea(best))
+      ) {
+        best = inner[i];
+      }
+    }
+    var line = best.map(function (pt) {
+      return { x: pt.x, y: pt.y };
+    });
+    line.push({ x: line[0].x, y: line[0].y });
+    var thin = window.simplify(line, tol, true);
+    thin.pop();
+    if (!thin || thin.length < 3 || thin.length >= tree.length) return tree;
+    if (tree.children) thin.children = tree.children;
+    return thin;
+  }
+
+  /**
    * v1.13.0: a sheet's outline with its flaws as holes — those drawn in its
    * file (fileFlaws) and those added in the Flaws box (appFlawPolys, kept
    * up to date by the UI) — so nothing is nested over them.
    */
   sheetWithFlaws(part) {
-    var tree = this.cloneTree(part.polygontree);
+    var tree = this.thinSheetOutline(this.cloneTree(part.polygontree));
     var flaws = (part.fileFlaws || []).concat(part.appFlawPolys || []);
     if (flaws.length) {
       tree.children = flaws.map(function (f) {

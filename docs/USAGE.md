@@ -605,6 +605,12 @@ piece), draw round it in Inkscape at full size: trace a photo taken square over
 it, with a grid or a ruler in the picture to set the scale. Import the drawing,
 then tick **Sheet** on its row. Pieces nest inside the outline.
 
+Anything hidden in the drawing (a layer with its eye closed, a reference
+outline) is left out on import, so keep only the usable shape and its flaws
+showing. An outline traced in many small steps is smoothed for nesting, at most
+2 mm inside the line you drew; the list, the nest screen and the export keep
+your outline.
+
 On a hide the nest screen shows the **area** the pieces use, out of the hide's
 area, and what's **left over** once flaws are taken off, instead of a fabric
 length. Square metres or square feet: **Settings → Area on a hide**. The best
@@ -617,9 +623,12 @@ hide.
 
 ### Flaws drawn in the file
 
-Draw each flaw (a hole, a scar, a thin or stained patch) as a closed shape
-inside the outline, and give it a Label or ID containing `flaw`: `flaw-1`,
-`flaw-2`… (or put the shapes in a group labelled `flaws`). They show in red.
+Draw each flaw (a hole, a scar, a thin or stained patch) as a shape inside the
+outline, with any of Inkscape's tools (circle, rectangle, pen), and give it a
+Label or ID containing `flaw`: `flaw-1`, `flaw-2`… (or put the shapes in a group
+with `flaw` in its name). They show in red. In Inkscape, set the ID or Label in
+**Object → Object Properties** and press **Set**; a shape still called `path1`
+isn't a flaw.
 Nothing is nested over a flaw, and pieces keep the usual space between pieces
 from it. A flaw on the edge can cross the outline; it's still kept.
 
