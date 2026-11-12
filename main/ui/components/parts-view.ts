@@ -33,6 +33,9 @@ import {
   primaryFold,
   type FuseMode,
 } from "../utils/auto-cuts.js";
+import { addToView, currentView } from "../utils/views.js";
+import { quantityOf } from "../utils/nest-rank.js";
+import { pieceId } from "../utils/saved-layouts.js";
 import type { ViewOption, ViewsService } from "../services/views.service.js";
 import type { FlawsService } from "../services/flaws.service.js";
 import type {
@@ -564,6 +567,64 @@ export class PartsViewService {
   }
 
   /**
+   * v1.13.2: before rows are deleted, gives the mirror copies of a doomed
+   * piece somewhere to stand, so each stays the shape it is and reopens
+   * as that shape. (A copy whose original had gone was saved as a mirror
+   * of whichever piece of the file came before it: another shape under
+   * the old name.)
+   *
+   * - A copy of a doomed copy is re-linked to the nearest piece up the
+   *   chain that is staying.
+   * - When the piece from the file itself is going, the first copy left
+   *   becomes that piece, mirrored: it takes over the original's place in
+   *   the file (its drawing stays in the import) and stops being a copy.
+   *   Any other copies become copies of it.
+   *
+   * Returns the doomed pieces whose drawing must stay in the import.
+   */
+  private rehomeMirrorCopies(doomed: Set<Part>): Set<Part> {
+    const kept = new Set<Part>();
+    const parts = this.deepNest.parts;
+    const byId = (id: number | undefined): Part | undefined =>
+      id == null
+        ? undefined
+        : parts.find((q) => !q.sheet && !q.autoCopy && q.grainnestId === id);
+    const heirOf = new Map<Part, Part>();
+    for (const copy of parts) {
+      if (doomed.has(copy) || !copy.isMirrorCopy || copy.autoCopy) continue;
+      let up = byId(copy.mirrorOfId);
+      if (!up || !doomed.has(up)) continue;
+      // Up the chain past doomed copies.
+      const seen = new Set<Part>();
+      while (up && doomed.has(up) && up.isMirrorCopy && !seen.has(up)) {
+        seen.add(up);
+        up = byId(up.mirrorOfId);
+      }
+      if (!up) continue; // nothing left to stand on: saved as an orphan
+      if (!doomed.has(up)) {
+        copy.mirrorOfId = up.grainnestId;
+        continue;
+      }
+      // `up` is the piece from the file, and it's going.
+      const heir = heirOf.get(up);
+      if (heir) {
+        copy.mirrorOfId = heir.grainnestId;
+        continue;
+      }
+      if (typeof up.importPartIndex !== "number") continue;
+      heirOf.set(up, copy);
+      kept.add(up);
+      pieceId(this.deepNest, copy);
+      copy.isMirrorCopy = false;
+      delete copy.mirrorOfId;
+      copy.importPartIndex = up.importPartIndex;
+      copy.importRef = up.importRef;
+      copy.svgelements = up.svgelements;
+    }
+    return kept;
+  }
+
+  /**
    * Delete all selected parts
    */
   deleteParts(): void {
@@ -582,12 +643,14 @@ export class PartsViewService {
     ) {
       return;
     }
+    const kept = this.rehomeMirrorCopies(new Set(doomed));
     for (let i = 0; i < this.deepNest.parts.length; i++) {
       if (this.deepNest.parts[i].selected) {
-        // Remove SVG elements from DOM
+        // Remove SVG elements from DOM (unless a mirror copy has taken
+        // them over: see rehomeMirrorCopies).
         for (let j = 0; j < this.deepNest.parts[i].svgelements.length; j++) {
           const node = this.deepNest.parts[i].svgelements[j];
-          removeFromParent(node);
+          if (!kept.has(this.deepNest.parts[i])) removeFromParent(node);
         }
         // Remove from parts array
         this.deepNest.parts.splice(i, 1);
@@ -1110,8 +1173,30 @@ export class PartsViewService {
         const part = args[0] as Part;
         const idx = deepNest.parts.indexOf(part);
         if (idx === -1) return false;
-        deepNest.mirrorCopyPart(idx);
+        const copyIdx = deepNest.mirrorCopyPart(idx);
+        // v1.13.2: a copy made while a view is showing joins that view. It
+        // used to have no place in any view, so it was left out of the nest
+        // without a word and its row went after Back.
+        const view = currentView(deepNest);
+        if (view && copyIdx >= 0)
+          addToView(deepNest, view, [deepNest.parts[copyIdx]]);
         ractive.update("parts");
+        return false;
+      },
+    );
+
+    // v1.13.2: a row's Quantity box left empty, at 0 or below goes back to
+    // 1 (as Set qty already insists), and a fraction to a whole number.
+    ractive.on(
+      "fixquantity",
+      (_e: RactiveEvent, ...args: unknown[]): boolean | void => {
+        const part = args[0] as Part;
+        if (!part) return false;
+        const q = quantityOf(part);
+        if (part.quantity !== q) {
+          part.quantity = q;
+          ractive.update("parts");
+        }
         return false;
       },
     );

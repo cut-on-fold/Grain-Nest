@@ -7,7 +7,11 @@
 
 import { _electron as electron, expect, test } from "@playwright/test";
 import type { ElectronApplication } from "@playwright/test";
-import { appReady, setAskBeforeLeaving } from "./helpers/cut-codes";
+import {
+  appReady,
+  setAskBeforeLeaving,
+  setAskBeforeReplacing,
+} from "./helpers/cut-codes";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -57,6 +61,9 @@ test("Opening files the Mac sends", async () => {
   await sendFile(electronApp, sheetsFile);
   const page = await electronApp.firstWindow();
   await appReady(page);
+  // Projects arrive here over unsaved work; the save question has its own
+  // spec (save-first-v1140).
+  await setAskBeforeReplacing(page, false);
   const modal = page.locator(".gn-modal");
   await expect(modal).toContainText("Added 3 sheets", { timeout: 20000 });
   await expect(modal).toContainText("Blue linen (Main fabric)");
@@ -97,9 +104,7 @@ test("Opening files the Mac sends", async () => {
 
   // Another kind of file is refused.
   await sendFile(electronApp, path.resolve(__dirname, "assets", "not-svg.dxf"));
-  await expect(page.locator("#messagecontent")).toContainText(
-    "wasn't opened",
-  );
+  await expect(page.locator("#messagecontent")).toContainText("wasn't opened");
 
   // A project file opens as Open project does.
   const project = path.join(dir, "opened.gnp");
@@ -134,5 +139,6 @@ test("Opening files the Mac sends", async () => {
   await modal.locator("button[data-id=ok]").click();
 
   await setAskBeforeLeaving(page, true);
+  await setAskBeforeReplacing(page, true);
   await electronApp.close();
 });

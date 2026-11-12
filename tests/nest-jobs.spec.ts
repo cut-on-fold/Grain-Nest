@@ -12,7 +12,11 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
-import { setAskBeforeLeaving, setCutCodes } from "./helpers/cut-codes";
+import {
+  setAskBeforeLeaving,
+  setAskBeforeReplacing,
+  setCutCodes,
+} from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -47,6 +51,8 @@ test("nest jobs include/exclude pieces, nest skips excluded, survive save/load",
   const mainWindow = await electronApp.firstWindow();
   // Written for Quantity and Mirror copy by hand (v1.9.0).
   await setCutCodes(mainWindow, false);
+  // Opens its project over changes it hasn't saved: no save question.
+  await setAskBeforeReplacing(mainWindow, false);
   // Goes Back without saving layouts (v1.10.0).
   await setAskBeforeLeaving(mainWindow, false);
 
@@ -245,6 +251,7 @@ test("nest jobs include/exclude pieces, nest skips excluded, survive save/load",
   );
 
   await setCutCodes(mainWindow, true);
+  await setAskBeforeReplacing(mainWindow, true);
 
   await setAskBeforeLeaving(mainWindow, true);
 

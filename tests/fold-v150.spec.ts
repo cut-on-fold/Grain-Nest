@@ -90,7 +90,9 @@ test("Mark fold, folded mirror copies, mirror-then-fold, re-mark", async () => {
   }, k);
   await rows.nth(k).locator("a.markfold").click();
   await expect(mainWindow.locator("#grainmarker-banner")).toHaveClass(/active/);
-  expect(await width()).toBeGreaterThan(zoomBefore * 2);
+  // The zoom lands a moment after the banner shows, so wait for it (read
+  // at once, this failed about one run in four).
+  await expect.poll(width).toBeGreaterThan(zoomBefore * 2);
   const pick = await mainWindow.evaluate((k) => {
     const dn = (window as unknown as { DeepNest: DN }).DeepNest;
     const svg = document.querySelector("#import-0 svg") as SVGSVGElement;

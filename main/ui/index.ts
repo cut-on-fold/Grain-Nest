@@ -491,6 +491,8 @@ async function saveShownLayout(): Promise<void> {
  */
 function openLayout(layout: SavedLayout): void {
   const dn = getDeepNest();
+  // v1.13.2: Back's tidy-up, if still waiting, before anything is built.
+  nestingService.finishBack();
   const job = (layout.job || "all") as NestJob;
   // v1.11.0: a layout opens in its own view.
   setCurrentView(dn, layout.view ?? null);
@@ -1072,7 +1074,11 @@ async function openFiles(paths: string[]): Promise<void> {
     if (!(await nestingService.leaveNestScreen())) return;
   }
   // A project replaces what's open, so it goes first; one at a time.
+  // v1.14.0: with unsaved work on screen it asks first; Cancel leaves
+  // everything as it is and opens none of the files.
   if (projects.length > 0) {
+    const name = path.basename(projects[projects.length - 1]);
+    if (!(await okToReplaceProject(`Opening ${name}`))) return;
     projectService.loadProjectFile(projects[projects.length - 1]);
     if (projects.length > 1) {
       message(
@@ -1179,6 +1185,32 @@ function initializeFabricTypeSelect(): void {
 // just restoring the <select> in index.html and these two helpers.
 
 /**
+ * v1.14.0: before a project is opened, or Clear all, replaces what's on
+ * screen. If anything has changed since the project was last saved or
+ * opened (or it has never been saved), asks: Save project… / Don't save /
+ * Cancel. True = go ahead. Save that is cancelled in the file dialog, or
+ * fails, counts as Cancel. `doing` starts the sentence ("Opening Coat.gnp").
+ */
+async function okToReplaceProject(doing: string): Promise<boolean> {
+  if (configService.getSync("askBeforeReplacing") === false) return true;
+  if (!projectService.hasUnsavedWork()) return true;
+  const r = await showModal({
+    title: "Save this project first?",
+    text: [
+      `${doing} replaces what's on screen. Anything you've changed since the project was last saved will be lost.`,
+    ],
+    buttons: [
+      { id: "cancel", label: "Cancel" },
+      { id: "discard", label: "Don't save" },
+      { id: "save", label: "Save project…", primary: true },
+    ],
+  });
+  if (r.button === "discard") return true;
+  if (r.button === "save") return projectService.saveProject();
+  return false;
+}
+
+/**
  * §9.3.3: Initialize Save / Open project button handlers.
  */
 function initializeProjectButtons(): void {
@@ -1192,7 +1224,10 @@ function initializeProjectButtons(): void {
   const openBtn = getElement<HTMLElement>("#openproject");
   if (openBtn) {
     openBtn.onclick = () => {
-      projectService.loadProject();
+      void (async () => {
+        if (await okToReplaceProject("Opening another project"))
+          projectService.loadProject();
+      })();
       return false;
     };
   }
@@ -1207,12 +1242,23 @@ function initializeClearAllButton(): void {
   const btn = getElement<HTMLElement>("#clearall");
   if (!btn) return;
   btn.onclick = () => {
+    void clearAll();
+    return false;
+  };
+  const clearAll = async (): Promise<boolean> => {
     const dn = getDeepNest();
     if (dn.parts.length === 0 && dn.imports.length === 0) {
       message("Workspace is already empty — nothing to clear.", false);
       return false;
     }
+    // v1.14.0: with unsaved work, the Save / Don't save / Cancel question
+    // takes the place of the plain "Continue?".
     if (
+      configService.getSync("askBeforeReplacing") !== false &&
+      projectService.hasUnsavedWork()
+    ) {
+      if (!(await okToReplaceProject("Clear all"))) return false;
+    } else if (
       !window.confirm(
         "This will remove all imported parts and reset the workspace. Continue?",
       )

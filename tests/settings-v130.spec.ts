@@ -12,6 +12,7 @@
 // Run locally with CI=1 (video recording freezes the renderer timers).
 
 import { _electron as electron, expect, test } from "@playwright/test";
+import { setAskBeforeReplacing } from "./helpers/cut-codes";
 import { OpenDialogReturnValue } from "electron";
 import fs from "fs";
 import os from "os";
@@ -37,6 +38,8 @@ test("settings tidy-up, SVG-only import, woven/knit seams, 90 cm preset", async 
     args: ["main.js", "--no-sandbox"],
   });
   const mainWindow = await electronApp.firstWindow();
+  // Opens its project over changes it hasn't saved: no save question.
+  await setAskBeforeReplacing(mainWindow, false);
   await mainWindow.waitForSelector("#import");
 
   // ---- Settings page: removed settings gone, Advanced fold, new settings.
@@ -233,5 +236,6 @@ test("settings tidy-up, SVG-only import, woven/knit seams, 90 cm preset", async 
   await expect(mainWindow.locator("#sheetpreset")).toHaveValue("147");
   await mainWindow.click("id=cancelsheet");
 
+  await setAskBeforeReplacing(mainWindow, true);
   await electronApp.close();
 });

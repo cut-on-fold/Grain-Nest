@@ -159,7 +159,12 @@ test("A hide with flaws drawn in the file", async () => {
     "min fabric length",
   );
 
-  // The export keeps the hide's outline and its flaws.
+  // The export keeps the hide's outline and its flaws. If the layout so
+  // far doesn't fit every piece the app asks "Export it anyway?": yes.
+  // (Unanswered, the export didn't happen and this failed now and then.)
+  await page.evaluate(() => {
+    (window as unknown as { confirm: () => boolean }).confirm = () => true;
+  });
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gn-hide-"));
   const out = path.join(dir, "hide.svg");
   await app.evaluate(({ dialog }, f) => {

@@ -9,6 +9,7 @@
 
 import { Point } from '../build/util/point.js';
 import { HullPolygon } from '../build/util/HullPolygon.js';
+import { copiesToNest } from '../build/ui/utils/nest-rank.js';
 
 var config = {
   clipperScale: 10000000,
@@ -1777,14 +1778,10 @@ export class DeepNest {
         // v1.2.0: so do excluded sheets (no copies of that fabric).
         // v1.9.0: with pairs & folds from cut codes, the count worked out
         // for this nest (nestQuantity); a skipped piece nests none.
-        quantity:
-          this.parts[i].excluded ||
-          this.parts[i].autoSkip ||
-          this.parts[i].outOfView
-            ? 0
-            : typeof this.parts[i].nestQuantity === "number"
-              ? this.parts[i].nestQuantity
-              : this.parts[i].quantity,
+        // v1.13.2: one rule, shared with the layout list and the export
+        // warning (an empty or 0 Quantity used to nest none here but count
+        // as 1 there, so every layout looked a piece short).
+        quantity: copiesToNest(this.parts[i]),
         sheet: this.parts[i].sheet,
         polygontree: this.parts[i].sheet
           ? this.sheetWithFlaws(this.parts[i])

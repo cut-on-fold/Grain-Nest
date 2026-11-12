@@ -28,11 +28,9 @@ shipped via npm work without them for typical use.
 
 ### LINUX (CI tests only)
 
-See `.github/workflows/playwright.yml`:
-
-- gcc
-- clang
-- libboost-dev
+See `.github/workflows/playwright.yml`. The tests need Node and the system
+libraries Electron uses (`npx playwright install-deps chromium`); nothing is
+compiled, so no compiler or Boost is needed.
 
 ### Possible Problems
 

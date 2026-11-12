@@ -127,7 +127,11 @@ export class SvgParser {
 				localscale = (6*pxwidth)/width;
 			}
 			// these are css "pixels"
-			else if(/px/.test(width)){
+			// v1.13.2: a plain number is in px too (the SVG rule: no unit
+			// means px). It was read as "no width given", so the drawing came
+			// in at the Advanced "SVG scale" instead of the size it states:
+			// about a quarter size for a file drawn in mm.
+			else if(/px/.test(width) || /^[0-9]*\.?[0-9]+$/.test(width)){
 				width = Number(width.replace(/[^0-9\.]/g, ''));
 				localscale = (96*pxwidth)/width;
 			}

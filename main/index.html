@@ -108,7 +108,13 @@
           </ul>
         </span>
         <!-- v1.10.0: keep the layout on screen in the project. -->
-        <li class="button savelayout" id="savelayout" title="Keep this layout in the project, to open and export again without re-nesting">Save layout</li>
+        <li
+          class="button savelayout"
+          id="savelayout"
+          title="Keep this layout in the project, to open and export again without re-nesting"
+        >
+          Save layout
+        </li>
         <li class="button back" id="back">Back</li>
 
         <!-- progress bars -->
@@ -323,7 +329,7 @@
           									</select>
           								{{/if}}
           							{{else}}
-          								<input type="number" min="1" step="1" value="{{quantity}}" />
+          								<input type="number" class="rowquantity" min="1" step="1" value="{{quantity}}" on-change="fixquantity:{{this}}" />
           							{{/if}}
           						</td>
           						<td>{{#if !sheet}}<input type="number" class="seamallowance" min="0" step="0.5" value="{{seamAllowance}}" placeholder="0" />{{/if}}</td>
@@ -519,6 +525,14 @@
                 id="askBeforeLeavingNest"
                 type="checkbox"
                 data-config="askBeforeLeavingNest"
+              />
+            </dd>
+            <dt>Ask to save before replacing a project</dt>
+            <dd>
+              <input
+                id="askBeforeReplacing"
+                type="checkbox"
+                data-config="askBeforeReplacing"
               />
             </dd>
           </dl>
@@ -1449,41 +1463,228 @@
         </div>
 
         <div class="config_explain" id="explain_placementType">
-          <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="width: 100%" x="0px" y="0px" width="520px" height="332px" viewBox="0 0 520 332" enable-background="new 0 0 520 332" xml:space="preserve">
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="72.118" y1="148.737" x2="120.658" y2="148.737" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="72.118" y1="148.737" x2="81.073" y2="157.692" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="72.118" y1="148.737" x2="80.928" y2="139.927" />
-            <path fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" d="M4.072,38.978v65.262  c0,2.119,1.719,3.839,3.839,3.839h49.905c2.12,0,3.839-1.72,3.839-3.839V38.978c0-2.121-1.719-3.839-3.839-3.839H7.911  C5.791,35.139,4.072,36.857,4.072,38.978z M29.025,50.495c0,5.3-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.298-9.598-9.598  s4.298-9.598,9.598-9.598C24.729,40.897,29.025,45.195,29.025,50.495z" />
-            <path fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" d="M4.072,112.202v65.262  c0,2.119,1.719,3.839,3.839,3.839h49.905c2.12,0,3.839-1.719,3.839-3.839v-65.262c0-2.12-1.719-3.839-3.839-3.839H7.911  C5.791,108.363,4.072,110.082,4.072,112.202z M29.025,123.718c0,5.3-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.298-9.598-9.598  s4.298-9.598,9.598-9.598C24.729,114.121,29.025,118.418,29.025,123.718z" />
-            <path fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" d="M4.072,185.141v65.262  c0,2.119,1.719,3.839,3.839,3.839h49.905c2.12,0,3.839-1.719,3.839-3.839v-65.262c0-2.12-1.719-3.839-3.839-3.839H7.911  C5.791,181.302,4.072,183.021,4.072,185.141z M29.025,196.658c0,5.3-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.298-9.598-9.598  s4.298-9.598,9.598-9.598C24.729,187.06,29.025,191.358,29.025,196.658z" />
-            <rect x="3" y="35.139" fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" width="227.341" height="227.341" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="61.655" y1="4.943" x2="61.655" y2="292.676" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="404.188" y1="99.767" x2="452.729" y2="99.767" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="404.188" y1="99.767" x2="413.143" y2="108.722" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="404.188" y1="99.767" x2="412.998" y2="90.956" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="335.812" y1="179.864" x2="335.812" y2="228.405" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="335.812" y1="179.864" x2="326.857" y2="188.819" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="335.812" y1="179.864" x2="344.621" y2="188.675" />
-            <path fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" d="M278.156,38.978v65.262  c0,2.119,1.719,3.84,3.839,3.84H331.9c2.119,0,3.838-1.721,3.838-3.84V38.978c0-2.121-1.719-3.838-3.838-3.838h-49.906  C279.875,35.14,278.156,36.856,278.156,38.978z M303.109,50.495c0,5.299-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.299-9.598-9.598  c0-5.301,4.298-9.598,9.598-9.598C298.812,40.897,303.109,45.194,303.109,50.495z" />
-            <path fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" d="M347.256,108.009h-65.261  c-2.119,0-3.839,1.719-3.839,3.838v49.906c0,2.119,1.719,3.838,3.839,3.838h65.261c2.121,0,3.84-1.719,3.84-3.838v-49.906  C351.096,109.728,349.377,108.009,347.256,108.009z M335.74,132.962c-5.301,0-9.598-4.297-9.598-9.598s4.297-9.598,9.598-9.598  c5.299,0,9.598,4.297,9.598,9.598S341.039,132.962,335.74,132.962z" />
-            <path fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" d="M335.738,38.978v65.262  c0,2.119,1.719,3.84,3.84,3.84h49.904c2.121,0,3.84-1.719,3.84-3.84V38.978c0-2.119-1.719-3.838-3.84-3.838h-49.904  C337.457,35.14,335.738,36.858,335.738,38.978z M360.691,50.495c0,5.299-4.297,9.598-9.598,9.598c-5.299,0-9.598-4.299-9.598-9.598  c0-5.301,4.299-9.598,9.598-9.598C356.395,40.897,360.691,45.194,360.691,50.495z" />
-            <rect x="277.083" y="35.14" fill="none" stroke="#B4BBC8" stroke-width="2" stroke-miterlimit="10" width="227.34" height="227.34" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="393.322" y1="4.943" x2="393.322" y2="165.591" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="393.322" y1="165.591" x2="246.886" y2="165.591" />
-            <line fill="none" stroke="#EC2158" stroke-width="2" stroke-miterlimit="10" x1="550.736" y1="70.962" x2="525.727" y2="70.962" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            style="width: 100%"
+            x="0px"
+            y="0px"
+            width="520px"
+            height="332px"
+            viewBox="0 0 520 332"
+            enable-background="new 0 0 520 332"
+            xml:space="preserve"
+          >
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="72.118"
+              y1="148.737"
+              x2="120.658"
+              y2="148.737"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="72.118"
+              y1="148.737"
+              x2="81.073"
+              y2="157.692"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="72.118"
+              y1="148.737"
+              x2="80.928"
+              y2="139.927"
+            />
+            <path
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              d="M4.072,38.978v65.262  c0,2.119,1.719,3.839,3.839,3.839h49.905c2.12,0,3.839-1.72,3.839-3.839V38.978c0-2.121-1.719-3.839-3.839-3.839H7.911  C5.791,35.139,4.072,36.857,4.072,38.978z M29.025,50.495c0,5.3-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.298-9.598-9.598  s4.298-9.598,9.598-9.598C24.729,40.897,29.025,45.195,29.025,50.495z"
+            />
+            <path
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              d="M4.072,112.202v65.262  c0,2.119,1.719,3.839,3.839,3.839h49.905c2.12,0,3.839-1.719,3.839-3.839v-65.262c0-2.12-1.719-3.839-3.839-3.839H7.911  C5.791,108.363,4.072,110.082,4.072,112.202z M29.025,123.718c0,5.3-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.298-9.598-9.598  s4.298-9.598,9.598-9.598C24.729,114.121,29.025,118.418,29.025,123.718z"
+            />
+            <path
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              d="M4.072,185.141v65.262  c0,2.119,1.719,3.839,3.839,3.839h49.905c2.12,0,3.839-1.719,3.839-3.839v-65.262c0-2.12-1.719-3.839-3.839-3.839H7.911  C5.791,181.302,4.072,183.021,4.072,185.141z M29.025,196.658c0,5.3-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.298-9.598-9.598  s4.298-9.598,9.598-9.598C24.729,187.06,29.025,191.358,29.025,196.658z"
+            />
+            <rect
+              x="3"
+              y="35.139"
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              width="227.341"
+              height="227.341"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="61.655"
+              y1="4.943"
+              x2="61.655"
+              y2="292.676"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="404.188"
+              y1="99.767"
+              x2="452.729"
+              y2="99.767"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="404.188"
+              y1="99.767"
+              x2="413.143"
+              y2="108.722"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="404.188"
+              y1="99.767"
+              x2="412.998"
+              y2="90.956"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="335.812"
+              y1="179.864"
+              x2="335.812"
+              y2="228.405"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="335.812"
+              y1="179.864"
+              x2="326.857"
+              y2="188.819"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="335.812"
+              y1="179.864"
+              x2="344.621"
+              y2="188.675"
+            />
+            <path
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              d="M278.156,38.978v65.262  c0,2.119,1.719,3.84,3.839,3.84H331.9c2.119,0,3.838-1.721,3.838-3.84V38.978c0-2.121-1.719-3.838-3.838-3.838h-49.906  C279.875,35.14,278.156,36.856,278.156,38.978z M303.109,50.495c0,5.299-4.297,9.598-9.598,9.598c-5.3,0-9.598-4.299-9.598-9.598  c0-5.301,4.298-9.598,9.598-9.598C298.812,40.897,303.109,45.194,303.109,50.495z"
+            />
+            <path
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              d="M347.256,108.009h-65.261  c-2.119,0-3.839,1.719-3.839,3.838v49.906c0,2.119,1.719,3.838,3.839,3.838h65.261c2.121,0,3.84-1.719,3.84-3.838v-49.906  C351.096,109.728,349.377,108.009,347.256,108.009z M335.74,132.962c-5.301,0-9.598-4.297-9.598-9.598s4.297-9.598,9.598-9.598  c5.299,0,9.598,4.297,9.598,9.598S341.039,132.962,335.74,132.962z"
+            />
+            <path
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              d="M335.738,38.978v65.262  c0,2.119,1.719,3.84,3.84,3.84h49.904c2.121,0,3.84-1.719,3.84-3.84V38.978c0-2.119-1.719-3.838-3.84-3.838h-49.904  C337.457,35.14,335.738,36.858,335.738,38.978z M360.691,50.495c0,5.299-4.297,9.598-9.598,9.598c-5.299,0-9.598-4.299-9.598-9.598  c0-5.301,4.299-9.598,9.598-9.598C356.395,40.897,360.691,45.194,360.691,50.495z"
+            />
+            <rect
+              x="277.083"
+              y="35.14"
+              fill="none"
+              stroke="#B4BBC8"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              width="227.34"
+              height="227.34"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="393.322"
+              y1="4.943"
+              x2="393.322"
+              y2="165.591"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="393.322"
+              y1="165.591"
+              x2="246.886"
+              y2="165.591"
+            />
+            <line
+              fill="none"
+              stroke="#EC2158"
+              stroke-width="2"
+              stroke-miterlimit="10"
+              x1="550.736"
+              y1="70.962"
+              x2="525.727"
+              y2="70.962"
+            />
             <g>
-              <path fill="#EC2158" d="M114.187,303.34v-15.621h-5.658v-2.091c0.738,0,1.456-0.057,2.153-0.169   c0.696-0.112,1.327-0.323,1.891-0.631s1.04-0.728,1.43-1.261c0.39-0.532,0.656-1.209,0.8-2.029h1.999v21.802H114.187z" />
+              <path
+                fill="#EC2158"
+                d="M114.187,303.34v-15.621h-5.658v-2.091c0.738,0,1.456-0.057,2.153-0.169   c0.696-0.112,1.327-0.323,1.891-0.631s1.04-0.728,1.43-1.261c0.39-0.532,0.656-1.209,0.8-2.029h1.999v21.802H114.187z"
+              />
             </g>
             <g>
-              <path fill="#EC2158" d="M385.517,286.182c0.287-0.943,0.732-1.758,1.338-2.445c0.604-0.687,1.357-1.225,2.26-1.614   c0.901-0.389,1.927-0.584,3.075-0.584c0.942,0,1.829,0.139,2.659,0.415c0.831,0.276,1.554,0.677,2.168,1.199   c0.615,0.522,1.103,1.174,1.461,1.953s0.538,1.681,0.538,2.706c0,0.964-0.148,1.813-0.446,2.552   c-0.297,0.738-0.691,1.399-1.184,1.983s-1.056,1.112-1.691,1.584s-1.291,0.922-1.968,1.353c-0.677,0.41-1.353,0.815-2.029,1.215   s-1.297,0.825-1.86,1.276c-0.564,0.451-1.046,0.938-1.445,1.46c-0.399,0.523-0.661,1.123-0.784,1.799h11.193v2.307h-14.237   c0.103-1.291,0.333-2.394,0.691-3.306s0.815-1.707,1.368-2.383c0.554-0.677,1.179-1.271,1.876-1.784   c0.697-0.512,1.425-0.994,2.184-1.445c0.922-0.573,1.731-1.102,2.429-1.583s1.276-0.969,1.737-1.461   c0.462-0.492,0.81-1.024,1.046-1.599c0.235-0.574,0.354-1.24,0.354-1.999c0-0.595-0.112-1.133-0.338-1.614   s-0.528-0.896-0.907-1.245c-0.38-0.349-0.825-0.615-1.338-0.8s-1.056-0.276-1.63-0.276c-0.759,0-1.409,0.158-1.952,0.477   c-0.544,0.317-0.989,0.732-1.338,1.245s-0.6,1.092-0.753,1.737c-0.154,0.646-0.221,1.297-0.2,1.952h-2.614   C385.116,288.15,385.229,287.125,385.517,286.182z" />
+              <path
+                fill="#EC2158"
+                d="M385.517,286.182c0.287-0.943,0.732-1.758,1.338-2.445c0.604-0.687,1.357-1.225,2.26-1.614   c0.901-0.389,1.927-0.584,3.075-0.584c0.942,0,1.829,0.139,2.659,0.415c0.831,0.276,1.554,0.677,2.168,1.199   c0.615,0.522,1.103,1.174,1.461,1.953s0.538,1.681,0.538,2.706c0,0.964-0.148,1.813-0.446,2.552   c-0.297,0.738-0.691,1.399-1.184,1.983s-1.056,1.112-1.691,1.584s-1.291,0.922-1.968,1.353c-0.677,0.41-1.353,0.815-2.029,1.215   s-1.297,0.825-1.86,1.276c-0.564,0.451-1.046,0.938-1.445,1.46c-0.399,0.523-0.661,1.123-0.784,1.799h11.193v2.307h-14.237   c0.103-1.291,0.333-2.394,0.691-3.306s0.815-1.707,1.368-2.383c0.554-0.677,1.179-1.271,1.876-1.784   c0.697-0.512,1.425-0.994,2.184-1.445c0.922-0.573,1.731-1.102,2.429-1.583s1.276-0.969,1.737-1.461   c0.462-0.492,0.81-1.024,1.046-1.599c0.235-0.574,0.354-1.24,0.354-1.999c0-0.595-0.112-1.133-0.338-1.614   s-0.528-0.896-0.907-1.245c-0.38-0.349-0.825-0.615-1.338-0.8s-1.056-0.276-1.63-0.276c-0.759,0-1.409,0.158-1.952,0.477   c-0.544,0.317-0.989,0.732-1.338,1.245s-0.6,1.092-0.753,1.737c-0.154,0.646-0.221,1.297-0.2,1.952h-2.614   C385.116,288.15,385.229,287.125,385.517,286.182z"
+              />
             </g>
           </svg>
 
           <h2>1. Gravity</h2>
           Fills across the fabric's width (selvedge to selvedge) before using
-          more length, so the layout takes the <em>least length of
-          fabric</em>. Best for most cutting: lots of pieces on fashion or
-          lining fabric.
+          more length, so the layout takes the <em>least length of fabric</em>.
+          Best for most cutting: lots of pieces on fashion or lining fabric.
 
           <h2>2. Bounding box</h2>
           Keeps the pieces in the most compact <em>rectangle</em>, using width
@@ -1495,23 +1696,25 @@
 
         <div class="config_explain" id="explain_autoCutsFromCodes">
           <h1>Pairs &amp; folds from cut codes</h1>
-          Reads the cut code in each piece's name and works out the copies
-          when you nest, so each piece stays one row:
+          Reads the cut code in each piece's name and works out the copies when
+          you nest, so each piece stays one row:
           <h2>Pairs</h2>
-          C2M cuts two main pieces: one as drawn and one mirrored (a left and
-          a right). C3M cuts two one way and one mirrored. A piece's
-          <em>mirrored</em> drop-down changes how many are mirrored, e.g. 0 for a
-          piece cut twice the same way.
+          C2M cuts two main pieces: one as drawn and one mirrored (a left and a
+          right). C3M cuts two one way and one mirrored. A piece's
+          <em>mirrored</em> drop-down changes how many are mirrored, e.g. 0 for
+          a piece cut twice the same way.
           <h2>On the fold</h2>
-          C1MOF cuts one main piece on the fold: the piece is folded for you
-          (it needs a fold line or a straight edge).
+          C1MOF cuts one main piece on the fold: the piece is folded for you (it
+          needs a fold line or a straight edge).
           <h2>Each fabric</h2>
-          The count follows <em>Nest for</em>: C2M C2I L1 nests 2 in main
-          fabric (or fused), 2 interfacing and 1 lining.
+          The count follows <em>Nest for</em>: C2M C2I L1 nests 2 in main fabric
+          (or fused), 2 interfacing and 1 lining.
           <h2>Pieces without a code</h2>
           These use their Quantity. You're warned before nesting.
-          <p>Off: every piece uses its Quantity, Mirror copy and Fold as you
-          set them.</p>
+          <p>
+            Off: every piece uses its Quantity, Mirror copy and Fold as you set
+            them.
+          </p>
         </div>
 
         <div class="config_explain" id="explain_warnUncodedPieces">
@@ -1530,6 +1733,14 @@
           Ticking "Don't ask again" there turns this off.
         </div>
 
+        <div class="config_explain" id="explain_askBeforeReplacing">
+          <h1>Ask to save before replacing a project</h1>
+          Opening a project (from <em>Open project</em>, or by double-clicking
+          one in Finder) and <em>Clear all</em> replace what's on screen. If
+          you've changed anything since the project was last saved, Grain-Nest
+          asks first: save it, don't save, or cancel. Untick to stop it asking.
+        </div>
+
         <div class="config_explain" id="explain_areaUnits">
           <h1>Area on a hide</h1>
           On a shaped sheet (a hide), the nest screen shows the area the pieces
@@ -1546,10 +1757,12 @@
           <h2>Cut separately</h2>
           Two main pieces in main fabric, two interfacing pieces cut on their
           own.
-          <p>Fewer interfacing than main (C2M C1I) cuts separately to start
-          with. Each piece's <em>fused</em> drop-down can change this: All, a
-          number (as many as there are interfacing pieces, the rest plain
-          main fabric) or None (cut separately).</p>
+          <p>
+            Fewer interfacing than main (C2M C1I) cuts separately to start with.
+            Each piece's <em>fused</em> drop-down can change this: All, a number
+            (as many as there are interfacing pieces, the rest plain main
+            fabric) or None (cut separately).
+          </p>
         </div>
 
         <div class="config_explain" id="explain_populationSize">
@@ -2551,7 +2764,9 @@
           </p>
 
           <h2>Licences</h2>
-          <p>Grain-Nest is open source. It is made of parts with these licences:</p>
+          <p>
+            Grain-Nest is open source. It is made of parts with these licences:
+          </p>
           <ul class="info-licences">
             <li>
               <strong>MIT</strong> — Copyright © 2015 Jack Qiao; © 2023–2024
@@ -2567,11 +2782,10 @@
               Boost.Polygon © Glen Joseph Fernandes.
             </li>
             <li>
-              <strong>Other parts</strong> (Ractive, interact.js © Taye
-              Adeyemi, Simplify.js © Vladimir Agafonkin under the BSD
-              licence, the Lato font © Łukasz Dziedzic under the SIL Open Font
-              License, and others) keep their licence notices in their own
-              files.
+              <strong>Other parts</strong> (Ractive, interact.js © Taye Adeyemi,
+              Simplify.js © Vladimir Agafonkin under the BSD licence, the Lato
+              font © Łukasz Dziedzic under the SIL Open Font License, and
+              others) keep their licence notices in their own files.
             </li>
           </ul>
           <p class="info-small">

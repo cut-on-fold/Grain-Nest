@@ -642,16 +642,26 @@ export class NestingService {
   }
 
   /**
+   * v1.13.2: runs Back's tidy-up now if it's still waiting (it runs two
+   * seconds after Back). Anything that builds on the nest's state calls
+   * this FIRST: the tidy-up empties the nest results and takes away the
+   * copies made for pairs, so run afterwards it undid a saved layout that
+   * had just been opened (an almost empty nest screen, Export greyed out).
+   */
+  finishBack(): void {
+    if (!this.backCleanup) return;
+    clearTimeout(this.backCleanup.timer);
+    const run = this.backCleanup.run;
+    this.backCleanup = null;
+    run();
+  }
+
+  /**
    * v1.10.0: shows a saved layout on the nest screen (no nest running),
    * ready to export. `nest` is already in DeepNest.nests.
    */
   showLayout(nest: SelectableNestingResult): void {
-    if (this.backCleanup) {
-      clearTimeout(this.backCleanup.timer);
-      const run = this.backCleanup.run;
-      this.backCleanup = null;
-      run();
-    }
+    this.finishBack();
     if (this.startLabelTimer) {
       clearTimeout(this.startLabelTimer);
       this.startLabelTimer = null;

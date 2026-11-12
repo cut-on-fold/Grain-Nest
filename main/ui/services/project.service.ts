@@ -40,6 +40,7 @@ import {
   viewsFromFile,
   type PieceViewFile,
 } from "../utils/views.js";
+import { rescaleProject, scaleFactor } from "../utils/project-scale.js";
 
 /**
  * File system interface — minimal slice this service needs. Matches
@@ -169,6 +170,12 @@ interface ProjectFileV1 {
   /** v1.11.0: views (pieces as positions in `parts`), and the one shown. */
   views?: PieceViewFile[];
   currentView?: string;
+  /**
+   * v1.14.0: the Settings → Advanced "SVG scale" (units per inch) the
+   * drawings, sheets, fold lines and layouts in this file are in. Absent in
+   * older files: taken to be the scale set when the file is opened.
+   */
+  scale?: number;
 }
 
 const PROJECT_FILE_FILTERS: FileFilter[] = [
@@ -211,6 +218,52 @@ export class ProjectService {
     this.onAfterLoad = options.onAfterLoad ?? null;
   }
 
+  // -------------------------------------------------------------------
+  // v1.14.0: unsaved work. "Saved" is what Save project would write now,
+  // compared with what it wrote (or Open project read) last time. So
+  // anything that goes into the file counts: pieces and their settings,
+  // sheets, flaws, views, saved layouts and the last nest.
+  // -------------------------------------------------------------------
+
+  private savedPrint: string | null = null;
+
+  private print(): string {
+    // Not the time of saving, and not the SVG scale: that's a setting, and
+    // changing it changes nothing in the project.
+    return JSON.stringify({ ...this.buildSaveData(), savedAt: "", scale: 0 });
+  }
+
+  /** What's on screen now counts as saved (after Save or Open project). */
+  markSaved(): void {
+    try {
+      this.savedPrint = this.print();
+    } catch {
+      this.savedPrint = null;
+    }
+  }
+
+  /**
+   * Whether replacing what's on screen would lose anything: there's
+   * something there, and it differs from the last save or open.
+   */
+  hasUnsavedWork(): boolean {
+    if (this.deepNest.parts.length === 0 && this.deepNest.imports.length === 0)
+      return false;
+    try {
+      return this.print() !== this.savedPrint;
+    } catch {
+      return true;
+    }
+  }
+
+  /** Settings → Advanced "SVG scale", units per inch. */
+  private currentScale(): number {
+    const cfg = (
+      this.deepNest as unknown as { config(): { scale?: number } }
+    ).config();
+    return Number(cfg && cfg.scale) || 96;
+  }
+
   setPartsRactive(r: RactiveInstance<PartsViewData>): void {
     this.partsRactive = r;
   }
@@ -235,6 +288,7 @@ export class ProjectService {
       const data = this.buildSaveData();
       this.fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
       this.rememberProject(filePath);
+      this.markSaved();
       return true;
     } catch (e) {
       const err = e as Error;
@@ -277,6 +331,7 @@ export class ProjectService {
       this.applyLoadData(data);
       this.rememberProject(paths[0]);
       if (this.onAfterLoad) this.onAfterLoad();
+      this.markSaved();
       return true;
     } catch (e) {
       const err = e as Error;
@@ -412,7 +467,11 @@ export class ProjectService {
             (q) => q !== p && !q.sheet && q.grainnestId === p.mirrorOfId,
           );
         }
-        if (srcIdx < 0) {
+        // v1.13.2: only a copy with no id link at all (made before the
+        // link existed) is guessed by filename. A copy whose linked piece
+        // has gone is never pinned on another piece of the same file: it
+        // used to reopen as a mirror of that piece, the wrong shape.
+        if (srcIdx < 0 && p.mirrorOfId == null) {
           const prior = mostRecentByFilename.get(p.filename);
           if (prior !== undefined) srcIdx = prior;
         }
@@ -422,9 +481,17 @@ export class ProjectService {
             ...common,
           };
         }
-        // Source not resolvable at all — fall through to the
-        // import-origin path. (The mirror flag still survives in
-        // `common`, so the visual flip is kept.)
+        // Nothing to rebuild it from. Deleting rows re-homes copies
+        // (parts-view rehomeMirrorCopies), so this shouldn't happen; if it
+        // does, save it as an orphan the loader skips, so it can't take
+        // another piece's place in the file.
+        console.warn(
+          `[grainnest] mirror copy "${p.name}" has lost its original; it won't be restored`,
+        );
+        return {
+          source: { kind: "import", importIndex: -1, indexInImport: 0 },
+          ...common,
+        };
       }
 
       // Import-origin part. Track most-recent so a later mirror copy
@@ -507,6 +574,7 @@ export class ProjectService {
       nests: [],
       layouts,
       lastNest,
+      scale: this.currentScale(),
       ...viewsForFile(this.deepNest, savedIndexOfPid),
       nap: !!this.deepNest.nap,
       fabricType: this.deepNest.fabricType === "knit" ? "knit" : undefined,
@@ -520,6 +588,9 @@ export class ProjectService {
   // -------------------------------------------------------------------
 
   private applyLoadData(data: ProjectFileV1): void {
+    // v1.14.0: a file saved at another SVG scale is brought to this one
+    // first, so every real size is what it was when it was saved.
+    rescaleProject(data, scaleFactor(data.scale, this.currentScale()));
     // Wipe current state. ractive.update("imports"/"parts") triggers
     // a re-render that drops the now-orphan import DIVs.
     this.resetWorkspace();
@@ -798,6 +869,13 @@ export class ProjectService {
     if (saved.cutOnFold && !part.cutOnFold) {
       const fidx = this.deepNest.parts.indexOf(part);
       if (fidx >= 0) this.deepNest.foldPart(fidx);
+    }
+    // v1.13.2: and the other way. A mirror copy is rebuilt from its
+    // original, fold and all, so a copy saved flat (unfolded by hand, or
+    // made before its original was folded) came back folded: twice as wide.
+    else if (!saved.cutOnFold && part.cutOnFold && part.isMirrorCopy) {
+      const fidx = this.deepNest.parts.indexOf(part);
+      if (fidx >= 0) this.deepNest.unfoldPart(fidx);
     }
 
     // The saved grain angle and top are the piece's final state, so apply

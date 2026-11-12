@@ -77,6 +77,8 @@ export const DEFAULT_CONFIG: Readonly<UIConfig> = {
   // v1.10.0: "Don't ask again" on these two questions turns them off.
   warnUncodedPieces: true,
   askBeforeLeavingNest: true,
+  askBeforeReplacing: true, // v1.14.0
+
   // v1.13.0: area on a hide in square metres or square feet.
   areaUnits: "m2",
   // v1.3.0: bumped when saved settings need a one-off migration.
@@ -97,6 +99,7 @@ export const BOOLEAN_CONFIG_KEYS: ReadonlyArray<keyof UIConfig> = [
   "autoCutsFromCodes",
   "warnUncodedPieces",
   "askBeforeLeavingNest",
+  "askBeforeReplacing",
 ];
 
 /**

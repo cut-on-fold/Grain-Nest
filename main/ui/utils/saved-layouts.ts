@@ -70,6 +70,12 @@ export interface SavedLayout {
   sheets: LayoutSheet[];
   /** Every piece (and sheet) in the nest, by pid. */
   pieces: Record<string, PieceFingerprint>;
+  /**
+   * v1.13.2: names of pieces the layout used that were deleted before the
+   * project was saved. Their placements can't be kept in the file, so
+   * this is what's left to say the layout is no longer whole.
+   */
+  gone?: string[];
 }
 
 /** The engine's id counter (shared with DeepNest.mirrorCopyPart). */
@@ -254,6 +260,7 @@ export function layoutChanges(
     if (!part.sheet && part.excluded) what.push("left out of the nest");
     if (what.length) changes.push(`${now.name}: ${what.join(", ")}`);
   }
+  for (const name of layout.gone ?? []) changes.push(`${name}: deleted`);
   for (const p of dn.parts) {
     if (p.autoCopy || !inNest(p)) continue;
     const pid = p.grainnestId;
@@ -324,24 +331,44 @@ function remap(
   map: (pid: number) => number | undefined,
 ): SavedLayout | null {
   const sheets: LayoutSheet[] = [];
+  let lost = 0;
   for (const ls of layout.sheets) {
     const sheet = map(ls.sheet);
-    if (sheet === undefined) continue;
+    if (sheet === undefined) {
+      lost += ls.placements.length;
+      continue;
+    }
     const placements: LayoutPlacement[] = [];
     for (const lp of ls.placements) {
       const pid = map(lp.piece.pid);
-      if (pid === undefined) continue;
+      if (pid === undefined) {
+        lost++;
+        continue;
+      }
       placements.push({ ...lp, piece: { ...lp.piece, pid } });
     }
     sheets.push({ sheet, placements });
   }
   if (sheets.length === 0) return null;
   const pieces: Record<string, PieceFingerprint> = {};
+  // v1.13.2: a piece that has gone leaves its name behind, and the count
+  // of pieces placed drops by the placements that went with it, so the
+  // banner and the panel still say the layout isn't whole after reopening.
+  const gone = [...(layout.gone ?? [])];
   for (const [k, v] of Object.entries(layout.pieces)) {
     const m = map(Number(k));
     if (m !== undefined) pieces[m] = v;
+    else gone.push(v.name);
   }
-  return { ...layout, sheets, pieces };
+  const out: SavedLayout = {
+    ...layout,
+    sheets,
+    pieces,
+    placed: Math.max(0, layout.placed - lost),
+  };
+  if (gone.length) out.gone = gone;
+  else delete out.gone;
+  return out;
 }
 
 /** For saving: session ids -> positions in the saved parts list. */

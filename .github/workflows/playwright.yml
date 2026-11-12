@@ -15,9 +15,11 @@ jobs:
     timeout-minutes: 20
     runs-on: ${{ matrix.os }}
     steps:
-      - name: boost
-        if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get update && sudo apt-get install -yq libboost-dev
+      # No Boost here: the native modules come prebuilt from npm, so the
+      # tests never compile anything. Installing libboost-dev was a leftover
+      # from deepnest-next, and it failed the whole job whenever Ubuntu's
+      # package server couldn't be reached (11 Nov 2026: three runs in an
+      # hour, before any test ran).
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
@@ -48,7 +50,24 @@ jobs:
         # libraries Electron needs (install-deps), NOT the 165 MB Chromium
         # browser. That browser download hung ~18 min post-download and timed
         # out the job; nothing here ever launches it.
-        run: npx playwright install-deps chromium
+        #
+        # install-deps needs Ubuntu's package server. When that can't be
+        # reached (11 Nov 2026: it failed fetching nine font packages, with
+        # every library already on the machine), don't fail on that alone:
+        # carry on if the Electron binary has every library it links to and
+        # xvfb-run is there, and say so in a warning. Five minutes at most,
+        # so a server that never answers can't use up the job's time.
+        run: |
+          if timeout --kill-after=10 300 npx playwright install-deps chromium; then
+            exit 0
+          fi
+          missing=$(ldd node_modules/electron/dist/electron | grep "not found" || true)
+          if [ -n "$missing" ] || ! command -v xvfb-run >/dev/null; then
+            echo "install-deps failed, and Electron can't run without it:"
+            echo "${missing:-xvfb-run is not installed}"
+            exit 1
+          fi
+          echo "::warning::install-deps could not reach the package server; Electron's libraries are all present, so the tests run without the extra fonts it would have added."
       - name: Run Playwright tests
         run: xvfb-run npm test
       # The report is only worth keeping when a test failed, and not for long:

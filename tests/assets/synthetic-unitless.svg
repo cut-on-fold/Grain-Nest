@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="1133.858" height="453.543" viewBox="0 0 300 120">
+  <!-- v1.13.2 fixture: the same 300 x 120 mm drawing as synthetic-mm.svg,
+       but its width is a plain number (1133.858 = 300 mm in px) with no
+       unit. The square is 100 mm across. -->
+  <g id="piece-square" inkscape:label="Square C1M">
+    <path d="M 10,10 L 110,10 L 110,110 L 10,110 Z" fill="none" stroke="#000"/>
+    <path id="grain-square" d="M 60,20 L 60,100" stroke="#888"/>
+  </g>
+</svg>

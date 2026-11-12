@@ -185,8 +185,9 @@ file name faintly; just click and type a name.
 ### Other things to know
 
 - **SVG files only.** Inches, millimetres or centimetres are all fine — set the
-  document units in Inkscape's Document Properties as usual. (Files with no
-  units at all use the scale under Settings → Advanced.)
+  document units in Inkscape's Document Properties as usual. A width written
+  as a plain number is read as px, the SVG rule. (Files that give no width at
+  all, or no viewBox, use the scale under Settings → Advanced.)
 - **Text is not imported.** Labels and instructions written as text boxes are
   dropped — Grain-Nest prints each piece's name on the export itself, from the
   name in the parts list.
@@ -480,7 +481,8 @@ codes) and set things up yourself. Which one to use:
 
 Type a number in the **Quantity** box. Each extra copy is identical — not
 mirrored. To set many at once, select the rows, type a number by **Set qty** in
-the **Apply to selected** bar and click **Set qty**.
+the **Apply to selected** bar and click **Set qty**. The lowest is 1: an empty
+box or 0 goes back to 1. To nest none of a piece, untick **Nest** on its row.
 
 ### Mirror and Mirror copy
 
@@ -492,7 +494,9 @@ Both buttons are in the piece's **Actions** column.
 - **Mirror copy** leaves the original alone and adds a new row underneath:
   its mirror image. This is the usual way to get a left/right pair. The copy
   takes the original's name, grain rule, top, seam allowance, Nest tick and
-  cut-on-fold setting. Its quantity starts at 1.
+  cut-on-fold setting. Its quantity starts at 1. Made while a
+  [view](#views) is showing, the copy joins that view. If you later delete the
+  original, the copy stays, as a piece in its own right.
 
 To mirror several pieces at once, select them and use **Mirror** / **Unmirror**
 in the **Apply to selected** bar.
@@ -708,8 +712,10 @@ never deletes rows.
 ### Clear all
 
 **Clear all** in the top bar removes every piece, sheet, import and nest result
-and starts afresh. It asks first. There is **no undo** — in Clear all or
-anywhere else in Grain-Nest — so save a project first if you might want it back.
+and starts afresh. It asks first: with changes you haven't saved, it offers to
+[save the project first](#save-this-project-first). There is **no undo** — in
+Clear all or anywhere else in Grain-Nest — so save a project if you might want
+it back.
 
 ### The import preview
 
@@ -807,6 +813,10 @@ the layout gets a ⚠ in the list:
   are now.
 - **Keep as saved** keeps the layout (it's drawn with the pieces as they are
   now, so changed pieces may overlap or not fit).
+
+A deleted piece is still named after the project has been saved and reopened,
+and the layout's count in the list drops by the pieces it can no longer place
+(3/3 becomes 2/3).
 
 ### Leaving without saving
 
@@ -950,6 +960,23 @@ Two buttons in the top bar:
 - **Open project** — opens a `.gnp` file. What's on screen is cleared and the
   saved project loaded in its place.
 
+### Save this project first?
+
+Opening a project (with **Open project**, or by double-clicking one in Finder)
+and **Clear all** replace what's on screen. If anything has changed since the
+project was last saved or opened, or it has never been saved, Grain-Nest asks
+first:
+
+- **Save project…** saves it (asking where, as Save project does), then carries
+  on. If you cancel the save, nothing is opened or cleared.
+- **Don't save** carries on without saving.
+- **Cancel** leaves everything as it is.
+
+Nothing is asked when the screen is empty or nothing has changed. "Changed"
+means anything a project keeps (the list below), including a layout from your
+last nest that you haven't saved. To stop it asking, untick **Settings → Ask
+to save before replacing a project**.
+
 A project keeps your pieces with their names, grain rules, marked grain lines,
 tops, mirrors and mirror copies, cut-on-fold and marked folds, quantities, seam
 allowances, Nest ticks, sheets (with their names and fabrics), the Nest for
@@ -964,6 +991,10 @@ update by itself.
 Not saved: which preview tab was open, the zoom, and the list of results on
 the nest screen (save the ones you want with **Save layout**).
 
+A project also records the SVG scale it was saved at (Settings → Advanced). If
+that setting is different when you open it, the project is brought to the new
+scale, so every piece, sheet and saved layout keeps its real size.
+
 ## Opening files from Finder and other apps
 
 Grain-Nest opens files the Mac hands it, as well as through its own buttons:
@@ -971,8 +1002,9 @@ double-click a project, choose **Open With → Grain-Nest** on a file in
 Finder, or drop a file on Grain-Nest's icon in the Dock. Another app can send
 files the same way.
 
-- **A project (`.gnp`)** opens as **Open project** does. Double-clicking one
-  opens Grain-Nest.
+- **A project (`.gnp`)** opens as **Open project** does, asking to
+  [save first](#save-this-project-first) if you have unsaved changes.
+  Double-clicking one opens Grain-Nest.
 - **An SVG pattern** imports as **Import** does, with the same question about
   adding the pieces to the view shown. Grain-Nest doesn't become the app SVGs
   open in; it's in their **Open With** list.
@@ -1028,6 +1060,8 @@ everything back.
       narrower than the fabric).
   - **Ask before leaving an unsaved layout** — on by default; see
     [Leaving without saving](#leaving-without-saving).
+  - **Ask to save before replacing a project** — on by default; see
+    [Save this project first?](#save-this-project-first)
 - **Seam allowance** — the default for wovens (12 mm) and knits (10 mm).
 - **Cut codes**
   - **Pairs & folds from cut codes** — on by default. See

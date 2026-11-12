@@ -140,7 +140,9 @@ export class LayoutsService {
           name: l.name,
           meta: this.meta(l, false),
           unsaved: false,
-          changed: this.changedIds.has(l.id),
+          // v1.13.2: also when a piece it used was deleted before the
+          // project was saved (known straight from the file).
+          changed: this.changedIds.has(l.id) || !!l.gone?.length,
         })),
     }));
     return { last, folders };

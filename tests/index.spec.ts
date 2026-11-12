@@ -241,6 +241,9 @@ test("Nest", async ({}, testInfo) => {
   });
 
   await stopNesting();
+  // Close the app. Grain-Nest only runs one copy of itself, so left open
+  // it made the next spec's launch quit at once (the info-page "flake").
+  await electronApp.close();
 });
 
 test.afterAll(async ({}, testInfo) => {

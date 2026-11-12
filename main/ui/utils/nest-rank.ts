@@ -74,12 +74,23 @@ export function piecesPlaced(nest: SelectableNestingResult): number {
 /**
  * How many copies of a part go into the nest: none when excluded or
  * skipped (v1.9.0), else the count worked out from its cut code, else
- * its Quantity. Matches DeepNest.start().
+ * its Quantity. DeepNest.start() calls this (v1.13.2).
  */
 export function copiesToNest(p: Part): number {
   if (p.excluded || p.autoSkip || p.outOfView) return 0;
   if (typeof p.nestQuantity === "number") return p.nestQuantity;
-  return p.quantity || 1;
+  return quantityOf(p);
+}
+
+/**
+ * v1.13.2: a row's Quantity as a whole number of 1 or more. An empty box
+ * or 0 counts as 1, here and in the engine (DeepNest.start uses
+ * copiesToNest), so the layout list, the export warning and the nest
+ * agree. To nest none of a piece, untick Nest or use a view.
+ */
+export function quantityOf(p: { quantity?: unknown }): number {
+  const q = Math.floor(Number(p.quantity));
+  return Number.isFinite(q) && q >= 1 ? q : 1;
 }
 
 export function piecesToPlace(deepNest: DeepNestInstance): number {
